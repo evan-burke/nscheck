@@ -1,0 +1,2 @@
+# nscheck
+dns checker
