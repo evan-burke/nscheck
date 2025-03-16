@@ -1,6 +1,11 @@
 # NSCheck
 
-A simple DNS checking application for validating DKIM and DMARC records.
+A simple DNS checking application for validating DKIM and DMARC records. This app helps ensure proper email authentication configuration by checking:
+
+- DKIM records (k1, k2, k3) for proper CNAME configuration
+- DMARC records for validity and uniqueness
+- Record propagation across multiple DNS providers
+- Common configuration errors and how to fix them
 
 ## Setup and Installation
 
@@ -25,29 +30,7 @@ npm run start
 
 ## Testing
 
-Install dependencies:
-
-```bash
-npm install --save-dev jest @testing-library/react @testing-library/jest-dom node-mocks-http jest-environment-jsdom @types/jest
-```
-
-Configure Jest in your package.json:
-```json
-  {
-    "scripts": {
-      "test": "jest",
-      "test:watch": "jest --watch"
-    },
-    "jest": {
-      "testEnvironment": "jsdom",
-      "setupFilesAfterEnv": ["@testing-library/jest-dom/extend-expect"],
-      "moduleNameMapper": {
-        "\\.(css|less|scss|sass)$": "identity-obj-proxy"
-      }
-    }
-  }
-```
-
+The test suite uses Jest and React Testing Library. Since actual DNS resolution and filesystem operations should be avoided in tests, you should use jest.mock() to create appropriate mocks for your tests.
 
 
 Run all tests:
@@ -65,6 +48,45 @@ npm test -- -t "dnsClient resolves records"
 
 # Run tests in watch mode
 npm run test:watch
+```
+
+### Mock Examples
+
+For DNS service tests:
+```javascript
+// Create a custom mock for each test
+jest.mock('../src/services/dns', () => ({
+  DnsResolver: jest.fn().mockImplementation(() => ({
+    queryAllProviders: jest.fn().mockResolvedValue({
+      google: { /* your test data */ },
+      cloudflare: { /* your test data */ },
+      openDNS: { /* your test data */ },
+      authoritative: { /* your test data */ }
+    }),
+    queryWithTimeout: jest.fn().mockImplementation((domain) => {
+      if (domain === 'nonexistent-domain-12345.com') {
+        return Promise.reject(new Error('DNS query timed out'));
+      }
+      return Promise.resolve(['dkim2.mcsv.net']);
+    })
+  })),
+  // ... other service mocks
+}));
+```
+
+For API tests:
+```javascript
+// Mock the http request/response objects
+const { req, res } = createMocks({
+  method: 'GET',
+  query: { domain: 'example.com' }
+});
+
+// Call your handler
+await domainHandler(req, res);
+
+// Test the response
+expect(res._getStatusCode()).toBe(200);
 ```
 
 ## Test Coverage
