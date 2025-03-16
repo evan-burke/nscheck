@@ -19,7 +19,7 @@ CSS transition the domain box toward the top, at 75% of the height of the window
 
 We will do dns lookups of TXT values for:
 k1._domainkey.example.com
-k2._domainkey.example.com 
+k2._domainkey.example.com
 k3._domainkey.example.com
 _dmarc.example.com
 
@@ -28,6 +28,7 @@ DNS lookups should be performed asynchronously against:
 * cloudflare DNS (1.1.1.1)
 * openDNS
 * authoritative nameservers for the domain.
+These should be run with a 10 second timeout.
 
 The success case is:
 The k2/k3 should return CNAMEs for dkim2.mcsv.net and dkim3.mcsv.net, respectively.
@@ -50,9 +51,19 @@ DKIM (k1/k2/k3) error cases:
 If no results found:
 * check if user accidentally published the record for 'www', like k2._domainkey.www.example.com
 * check if user accidentally published with the domain root twice, like k2._domainkey.example.com.example.com
+Show error text highlighting the issue, as "This is what it looks like" vs. "This is what it should look like". Use github-style red/green highlighting to show what should be changed.
 
 If results returned for k2/k3 but do not resolve to dkim2/dkim3:
 * check if k2/k3 were switched, or both records point to the same place.
+Show error text highlighting the issue, as "This is what it looks like" vs. "This is what it should look like". Use github-style red/green highlighting to show what should be changed.
+
+
+## Vercel notes
+Increase function timeout to 20 seconds.
+Add per-IP request throttling with maximum of 30 queries per hour per IP, with the ability to override this limit per IP or per IP range.
+
+Logging:
+Create a lightweight schema to log timestamped domain retrieval results and evaluation results (success/failure), and log queries to this file.
 
 
 
