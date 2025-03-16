@@ -29,18 +29,27 @@ jest.mock('../src/services/dns', () => {
           '_dmarc.example.com': ['v=DMARC1; p=reject']
         }
       }),
-      queryWithTimeout: jest.fn().mockImplementation((domain) => {
+      queryWithTimeout: jest.fn().mockImplementation((domain, recordType) => {
         if (domain === 'nonexistent-domain-12345.com') {
           return Promise.reject(new Error('DNS query timed out'));
         }
-        return Promise.resolve(['dkim2.mcsv.net']);
+        if (recordType === 'CNAME') {
+          if (domain.includes('k2._domainkey')) {
+            return Promise.resolve(['dkim2.mcsv.net']);
+          } else if (domain.includes('k3._domainkey')) {
+            return Promise.resolve(['dkim3.mcsv.net']);
+          } else {
+            return Promise.resolve(['dkim.mcsv.net']);
+          }
+        }
+        return Promise.resolve(['v=DMARC1; p=reject']);
       })
     })),
     DkimValidator: jest.fn().mockImplementation(() => ({
       validate: jest.fn().mockImplementation((domain, records) => {
         // Check if this is a test for switched records
-        if (records['k2._domainkey.example.com']?.[0]?.includes('dkim3.mcsv.net') &&
-            records['k3._domainkey.example.com']?.[0]?.includes('dkim2.mcsv.net')) {
+        if (records['k2._domainkey.example.com']?.[0] === 'dkim3.mcsv.net' &&
+            records['k3._domainkey.example.com']?.[0] === 'dkim2.mcsv.net') {
           return {
             isValid: false,
             errors: [{ type: 'switchedRecords', message: 'DKIM records appear to be switched' }]

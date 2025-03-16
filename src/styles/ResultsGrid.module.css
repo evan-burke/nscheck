@@ -1,8 +1,11 @@
 .container {
-  width: 100%;
-  max-width: 900px;
-  margin: 2rem auto;
+  width: 90%;
+  max-width: 2000px;
+  margin: 0.5rem auto;
   overflow-x: auto;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .warning {
@@ -83,4 +86,13 @@
 .noRecord {
   color: #6c757d;
   font-style: italic;
+}
+
+.authServerInfo {
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+  border-left: 4px solid #5d6d7e;
+  font-size: 0.9rem;
 }

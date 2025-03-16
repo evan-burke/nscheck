@@ -21,6 +21,14 @@ const DomainChecker: React.FC<DomainCheckerProps> = ({ onCheck, isLoading = fals
     onCheck(domain.trim());
   };
 
+  // Update isChecking state when loading state changes
+  React.useEffect(() => {
+    // If the parent component sets isLoading to false, we should stop checking
+    if (!isLoading && isChecking) {
+      setIsChecking(false);
+    }
+  }, [isLoading, isChecking]);
+
   // Combine CSS classes for animation
   const containerClass = `${styles.container} ${isChecking || isLoading ? styles.checking : ''}`;
 

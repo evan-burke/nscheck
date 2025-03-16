@@ -28,13 +28,54 @@ export class DnsResolver {
   }
 
   /**
+   * Resolve a nameserver hostname to IP address
+   */
+  private async resolveNameserverIp(nameserver: string): Promise<string | null> {
+    try {
+      // Use Google DNS to resolve the nameserver IP
+      const resolver = new dns.Resolver();
+      resolver.setServers(['8.8.8.8']);
+      
+      // Try IPv4 first
+      const addresses = await resolver.resolve4(nameserver);
+      if (addresses && addresses.length > 0) {
+        return addresses[0];
+      }
+      
+      // If no IPv4, try IPv6
+      const addresses6 = await resolver.resolve6(nameserver);
+      if (addresses6 && addresses6.length > 0) {
+        return addresses6[0];
+      }
+      
+      return null;
+    } catch (error) {
+      // Silently handle the error
+      return null;
+    }
+  }
+
+  /**
    * Query a specific DNS provider with timeout
    */
   async queryWithTimeout(domain: string, recordType: string, provider?: string): Promise<string[]> {
     const resolver = new dns.Resolver();
     
     if (provider) {
-      resolver.setServers([provider]);
+      // Check if the provider is a hostname rather than an IP
+      if (provider.includes('.com') || provider.includes('.net') || provider.includes('.org')) {
+        // Resolve the hostname to an IP address
+        const providerIp = await this.resolveNameserverIp(provider);
+        if (providerIp) {
+          resolver.setServers([providerIp]);
+        } else {
+          // If we can't resolve the hostname, we can't query it
+          throw new Error(`Could not resolve IP for nameserver ${provider}`);
+        }
+      } else {
+        // If it's not a hostname, assume it's already an IP
+        resolver.setServers([provider]);
+      }
     }
     
     const timeoutPromise = new Promise<string[]>((_, reject) => {
@@ -42,10 +83,20 @@ export class DnsResolver {
     });
     
     try {
-      // The actual DNS query
-      const queryPromise = resolver.resolveTxt(domain);
+      let queryPromise;
+      
+      // Choose the correct resolver method based on record type
+      if (recordType === 'CNAME') {
+        queryPromise = resolver.resolveCname(domain)
+          .then(results => results);
+      } else {
+        // Default to TXT records
+        queryPromise = resolver.resolveTxt(domain)
+          .then(results => results.map(item => item.join('')));
+      }
+      
       const result = await Promise.race([queryPromise, timeoutPromise]);
-      return result.map(item => item.join(''));
+      return result;
     } catch (error) {
       if ((error as Error).message === 'DNS query timed out') {
         throw error;
@@ -60,7 +111,13 @@ export class DnsResolver {
    */
   private async getAuthoritativeNameservers(domain: string): Promise<string[]> {
     try {
-      const nsRecords = await dns.resolveNs(domain);
+      // Create a resolver that uses Google's DNS for NS lookups
+      // This ensures we can reliably get NS records regardless of local DNS configuration
+      const resolver = new dns.Resolver();
+      resolver.setServers(['8.8.8.8']); // Use Google DNS
+      
+      // Use the resolver to get NS records
+      const nsRecords = await resolver.resolveNs(domain);
       return nsRecords;
     } catch (error) {
       // If can't resolve NS records, try parent domain
@@ -69,6 +126,8 @@ export class DnsResolver {
         const parentDomain = parts.slice(1).join('.');
         return this.getAuthoritativeNameservers(parentDomain);
       }
+      
+      // If we're at the TLD level and still failing, return empty array
       return [];
     }
   }
@@ -92,17 +151,32 @@ export class DnsResolver {
     
     // Query authoritative nameservers
     const authNsRecords = await this.getAuthoritativeNameservers(domain);
-    const authServer = authNsRecords.length > 0 ? authNsRecords[0] : null;
     
-    if (authServer) {
-      try {
-        const records = await this.queryWithTimeout(fullDomain, recordType, authServer);
-        result.authoritative = { [fullDomain]: records };
-      } catch (error) {
-        result.authoritative = { [fullDomain]: [] };
+    // Initialize with empty results
+    result.authoritative = { 
+      [fullDomain]: [],
+      authoritativeServers: authNsRecords || [] // Store all servers for reference
+    };
+    
+    if (authNsRecords && authNsRecords.length > 0) {
+      // Try each authoritative nameserver until we get a successful result
+      for (const authServer of authNsRecords) {
+        try {
+          const records = await this.queryWithTimeout(fullDomain, recordType, authServer);
+          
+          if (records && records.length > 0) {
+            result.authoritative = { 
+              [fullDomain]: records,
+              authoritativeServers: authNsRecords,
+              authoritativeServer: authServer // Keep the server that worked
+            };
+            break;
+          }
+        } catch (error) {
+          // If this server failed, continue to try the next one
+          continue;
+        }
       }
-    } else {
-      result.authoritative = { [fullDomain]: [] };
     }
     
     await Promise.all(providerQueries);
@@ -129,14 +203,14 @@ export class DkimValidator {
     const k3Records = records[`k3._domainkey.${domain}`] || [];
     
     if (k2Records.length > 0 && k3Records.length > 0) {
-      // Check if they point to correct destinations
-      const k2Valid = k2Records.some(r => r.includes('dkim2.mcsv.net'));
-      const k3Valid = k3Records.some(r => r.includes('dkim3.mcsv.net'));
+      // For CNAME records, we're looking for exact matches to dkim2.mcsv.net and dkim3.mcsv.net
+      const k2Valid = k2Records.some(r => r === 'dkim2.mcsv.net');
+      const k3Valid = k3Records.some(r => r === 'dkim3.mcsv.net');
       
       if (k2Valid && k3Valid) {
         result.isValid = true;
-      } else if (k2Records.some(r => r.includes('dkim3.mcsv.net')) && 
-                 k3Records.some(r => r.includes('dkim2.mcsv.net'))) {
+      } else if (k2Records.some(r => r === 'dkim3.mcsv.net') && 
+                 k3Records.some(r => r === 'dkim2.mcsv.net')) {
         // Check for switched records
         result.errors.push({
           type: 'switchedRecords',
@@ -152,7 +226,7 @@ export class DkimValidator {
       // Check fallback (k1 record)
       const k1Records = records[`k1._domainkey.${domain}`] || [];
       
-      if (k1Records.length > 0 && k1Records.some(r => r.includes('dkim.mcsv.net'))) {
+      if (k1Records.length > 0 && k1Records.some(r => r === 'dkim.mcsv.net')) {
         result.isValid = true;
       } else {
         // No valid DKIM setup found
@@ -294,11 +368,21 @@ export class ResultAnalyzer {
     
     // Check each record for consistency
     for (const recordName of recordNames) {
+      // Skip special fields like authoritativeServer and authoritativeServers
+      if (recordName === 'authoritativeServer' || recordName === 'authoritativeServers') {
+        continue;
+      }
+      
       const recordValues = new Map<string, string>();
       let hasValidResults = false;
       
       // Collect values from each provider
       Object.entries(results).forEach(([provider, providerResults]) => {
+        // Skip non-array values (like authoritativeServer/authoritativeServers)
+        if (!Array.isArray(providerResults[recordName]) && providerResults[recordName] !== undefined) {
+          return;
+        }
+        
         const value = JSON.stringify(providerResults[recordName] || []);
         recordValues.set(provider, value);
         
@@ -338,6 +422,13 @@ export class ResultAnalyzer {
     // First, add all records from all providers
     Object.values(results).forEach(providerResults => {
       Object.entries(providerResults).forEach(([recordName, values]) => {
+        // Skip metadata fields and ensure we only use array values
+        if (recordName === 'authoritativeServer' || 
+            recordName === 'authoritativeServers' ||
+            !Array.isArray(values)) {
+          return;
+        }
+        
         if (!consolidatedRecords[recordName]) {
           consolidatedRecords[recordName] = [];
         }

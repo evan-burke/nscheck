@@ -57,26 +57,39 @@ test('domain API returns DNS results for valid domain', async () => {
   // Override the mock to return specific test data
   const DnsResolver = require('../src/services/dns').DnsResolver;
   DnsResolver.mockImplementationOnce(() => ({
-    queryAllProviders: jest.fn().mockResolvedValue({
-      google: {
-        'k2._domainkey.example.com': ['dkim2.mcsv.net'],
-        'k3._domainkey.example.com': ['dkim3.mcsv.net'],
-        '_dmarc.example.com': ['v=DMARC1; p=reject']
-      },
-      cloudflare: {
-        'k2._domainkey.example.com': ['dkim2.mcsv.net'],
-        'k3._domainkey.example.com': ['dkim3.mcsv.net'],
-        '_dmarc.example.com': ['v=DMARC1; p=reject']
-      },
-      openDNS: {
-        'k2._domainkey.example.com': ['dkim2.mcsv.net'],
-        'k3._domainkey.example.com': ['dkim3.mcsv.net'],
-        '_dmarc.example.com': ['v=DMARC1; p=reject']
-      },
-      authoritative: {
-        'k2._domainkey.example.com': ['dkim2.mcsv.net'],
-        'k3._domainkey.example.com': ['dkim3.mcsv.net'],
-        '_dmarc.example.com': ['v=DMARC1; p=reject']
+    queryAllProviders: jest.fn().mockImplementation((domain, recordType, prefix) => {
+      // Return different results based on record type
+      if (recordType === 'CNAME') {
+        if (prefix.includes('k2')) {
+          return Promise.resolve({
+            google: { [`${prefix}.${domain}`]: ['dkim2.mcsv.net'] },
+            cloudflare: { [`${prefix}.${domain}`]: ['dkim2.mcsv.net'] },
+            openDNS: { [`${prefix}.${domain}`]: ['dkim2.mcsv.net'] },
+            authoritative: { [`${prefix}.${domain}`]: ['dkim2.mcsv.net'] }
+          });
+        } else if (prefix.includes('k3')) {
+          return Promise.resolve({
+            google: { [`${prefix}.${domain}`]: ['dkim3.mcsv.net'] },
+            cloudflare: { [`${prefix}.${domain}`]: ['dkim3.mcsv.net'] },
+            openDNS: { [`${prefix}.${domain}`]: ['dkim3.mcsv.net'] },
+            authoritative: { [`${prefix}.${domain}`]: ['dkim3.mcsv.net'] }
+          });
+        } else {
+          return Promise.resolve({
+            google: { [`${prefix}.${domain}`]: ['dkim.mcsv.net'] },
+            cloudflare: { [`${prefix}.${domain}`]: ['dkim.mcsv.net'] },
+            openDNS: { [`${prefix}.${domain}`]: ['dkim.mcsv.net'] },
+            authoritative: { [`${prefix}.${domain}`]: ['dkim.mcsv.net'] }
+          });
+        }
+      } else {
+        // TXT record
+        return Promise.resolve({
+          google: { [`${prefix}.${domain}`]: ['v=DMARC1; p=reject'] },
+          cloudflare: { [`${prefix}.${domain}`]: ['v=DMARC1; p=reject'] },
+          openDNS: { [`${prefix}.${domain}`]: ['v=DMARC1; p=reject'] },
+          authoritative: { [`${prefix}.${domain}`]: ['v=DMARC1; p=reject'] }
+        });
       }
     })
   }));

@@ -2,11 +2,17 @@ export interface DnsLookupOptions {
   timeout?: number;
 }
 
+export interface DnsProviderResult {
+  [key: string]: string[] | string[] | string | null;
+  authoritativeServer?: string | null;
+  authoritativeServers?: string[];
+}
+
 export interface DnsResult {
   google: Record<string, string[]>;
   cloudflare: Record<string, string[]>;
   openDNS: Record<string, string[]>;
-  authoritative: Record<string, string[]>;
+  authoritative: DnsProviderResult;
 }
 
 export interface ValidationError {

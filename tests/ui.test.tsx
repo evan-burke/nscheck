@@ -140,7 +140,7 @@ test('DomainChecker transitions the input box position when checking', async () 
 });
 
 test('ResultsGrid displays DNS check results correctly', () => {
-  const results: DnsResult = {
+  const results = {
     google: { 
       'k2._domainkey.example.com': ['dkim2.mcsv.net'],
       'k3._domainkey.example.com': ['dkim3.mcsv.net'],
@@ -152,7 +152,12 @@ test('ResultsGrid displays DNS check results correctly', () => {
       '_dmarc.example.com': ['v=DMARC1; p=reject']
     },
     openDNS: {},
-    authoritative: {}
+    authoritative: {
+      'k2._domainkey.example.com': ['dkim2.mcsv.net'],
+      'k3._domainkey.example.com': ['dkim3.mcsv.net'],
+      '_dmarc.example.com': ['v=DMARC1; p=reject'],
+      authoritativeServer: 'ns1.example.com'
+    }
   };
   
   const validation = {
@@ -179,7 +184,7 @@ test('ResultsGrid displays DNS check results correctly', () => {
 });
 
 test('ResultsGrid shows warning for inconsistent results', () => {
-  const results: DnsResult = {
+  const results = {
     google: { 
       'k2._domainkey.example.com': ['dkim2.mcsv.net']
     },
@@ -187,7 +192,10 @@ test('ResultsGrid shows warning for inconsistent results', () => {
       'k2._domainkey.example.com': [] // No result
     },
     openDNS: {},
-    authoritative: {}
+    authoritative: {
+      'k2._domainkey.example.com': ['dkim2.mcsv.net'],
+      authoritativeServer: 'ns1.example.com'
+    }
   };
   
   const validation = {

@@ -64,9 +64,11 @@ export default async function handler(
     const domainRecords: any = {};
     
     // Query all DNS providers for each key
-    const k1Results = await dnsResolver.queryAllProviders(domain, 'TXT', 'k1._domainkey');
-    const k2Results = await dnsResolver.queryAllProviders(domain, 'TXT', 'k2._domainkey');
-    const k3Results = await dnsResolver.queryAllProviders(domain, 'TXT', 'k3._domainkey');
+    // For DKIM keys, we want to check the CNAME records
+    const k1Results = await dnsResolver.queryAllProviders(domain, 'CNAME', 'k1._domainkey');
+    const k2Results = await dnsResolver.queryAllProviders(domain, 'CNAME', 'k2._domainkey');
+    const k3Results = await dnsResolver.queryAllProviders(domain, 'CNAME', 'k3._domainkey');
+    // For DMARC, we want the TXT record
     const dmarcResults = await dnsResolver.queryAllProviders(domain, 'TXT', '_dmarc');
     
     // Combine results

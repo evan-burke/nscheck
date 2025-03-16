@@ -8,17 +8,42 @@ interface ResultsGridProps {
 }
 
 const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
-  // Get all unique record names from all providers
+  // Get all unique record names from all providers, excluding special fields
   const allRecordNames = new Set<string>();
   
   Object.values(results).forEach(providerRecords => {
     Object.keys(providerRecords).forEach(recordName => {
-      allRecordNames.add(recordName);
+      // Skip special metadata fields
+      if (recordName !== 'authoritativeServer' && 
+          recordName !== 'authoritativeServers') {
+        allRecordNames.add(recordName);
+      }
     });
   });
   
+  // Filter and sort records
+  // First, check if k2 and k3 are present and have valid values
+  const k2Records = Array.from(allRecordNames).find(name => name.includes('k2._domainkey'));
+  const k3Records = Array.from(allRecordNames).find(name => name.includes('k3._domainkey'));
+  
+  // Check if both k2 and k3 exist and have valid values in at least one provider
+  const hasValidK2 = k2Records && Object.values(results).some(provider => 
+    provider[k2Records]?.some(value => value === 'dkim2.mcsv.net')
+  );
+  
+  const hasValidK3 = k3Records && Object.values(results).some(provider => 
+    provider[k3Records]?.some(value => value === 'dkim3.mcsv.net')
+  );
+  
+  const hasValidK2K3 = hasValidK2 && hasValidK3;
+      
+  // Filter out k1 records if k2 and k3 are present with valid values
+  const filteredRecordNames = hasValidK2K3 
+    ? Array.from(allRecordNames).filter(name => !name.includes('k1._domainkey'))
+    : Array.from(allRecordNames);
+
   // Sort records in a specific order: k2, k3, k1, _dmarc, others
-  const sortedRecordNames = Array.from(allRecordNames).sort((a, b) => {
+  const sortedRecordNames = filteredRecordNames.sort((a, b) => {
     const order: { [key: string]: number } = {
       'k2._domainkey': 1,
       'k3._domainkey': 2,
@@ -35,11 +60,12 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
   
   // Check if a specific record value is valid
   const isValidValue = (recordName: string, value: string): boolean => {
-    if (recordName.includes('k2._domainkey') && value.includes('dkim2.mcsv.net')) {
+    // For DKIM CNAME records, we need exact matches
+    if (recordName.includes('k2._domainkey') && value === 'dkim2.mcsv.net') {
       return true;
-    } else if (recordName.includes('k3._domainkey') && value.includes('dkim3.mcsv.net')) {
+    } else if (recordName.includes('k3._domainkey') && value === 'dkim3.mcsv.net') {
       return true;
-    } else if (recordName.includes('k1._domainkey') && value.includes('dkim.mcsv.net')) {
+    } else if (recordName.includes('k1._domainkey') && value === 'dkim.mcsv.net') {
       return true;
     } else if (recordName.includes('_dmarc') && value.includes('v=DMARC1')) {
       return true;
@@ -47,8 +73,20 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
     return false;
   };
 
+  // Extract the authoritative server info
+  const authoritativeServer = results.authoritative?.authoritativeServer || 'Not available';
+  const authoritativeServers = results.authoritative?.authoritativeServers || [];
+  
   return (
     <div className={styles.container}>
+      {/* Display authoritative server info */}
+      <div className={styles.authServerInfo}>
+        <p><strong>Authoritative nameserver used:</strong> {authoritativeServer}</p>
+        {authoritativeServers.length > 0 && (
+          <p><strong>All authoritative nameservers:</strong> {authoritativeServers.join(', ')}</p>
+        )}
+      </div>
+
       {!validation.consistency.consistent && validation.consistency.hasSuccessfulResults && (
         <div className={styles.warning}>
           <span className={styles.warningIcon} data-testid="warning-icon">⚠️</span>
@@ -136,7 +174,7 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
               
               {/* Authoritative */}
               <td>
-                {results.authoritative[recordName]?.length > 0 ? (
+                {recordName !== 'authoritativeServer' && Array.isArray(results.authoritative[recordName]) && results.authoritative[recordName].length > 0 ? (
                   <div>
                     {results.authoritative[recordName].map((value, i) => (
                       <div key={i} className={styles.recordValue}>
