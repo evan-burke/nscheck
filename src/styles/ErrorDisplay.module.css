@@ -1,0 +1,83 @@
+.container {
+  width: 100%;
+  max-width: 900px;
+  margin: 1rem 0 2rem;
+}
+
+.errorSection {
+  margin-bottom: 2rem;
+}
+
+.errorSection h3 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: #444;
+}
+
+.error {
+  margin-bottom: 1.5rem;
+}
+
+.errorContent {
+  display: flex;
+  align-items: flex-start;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #dc3545;
+}
+
+.errorIcon {
+  font-size: 1.5rem;
+  margin-right: 1rem;
+  line-height: 1;
+}
+
+.errorMessage {
+  margin: 0 0 0.5rem;
+  color: #333;
+}
+
+.comparison {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.incorrectValue {
+  padding: 0.75rem;
+  background-color: #ffeaea;
+  border-radius: 4px;
+}
+
+.correctValue {
+  padding: 0.75rem;
+  background-color: #e3ffe3;
+  border-radius: 4px;
+}
+
+.comparison span {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.comparison code {
+  display: block;
+  font-family: monospace;
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 0.5rem;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.link {
+  color: #0066cc;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+.link:hover {
+  text-decoration: none;
+}

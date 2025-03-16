@@ -1,0 +1,86 @@
+.container {
+  width: 100%;
+  max-width: 900px;
+  margin: 2rem auto;
+  overflow-x: auto;
+}
+
+.warning {
+  display: flex;
+  align-items: flex-start;
+  padding: 1rem;
+  background-color: #fff3cd;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.warningIcon {
+  font-size: 1.5rem;
+  margin-right: 0.75rem;
+  line-height: 1;
+}
+
+.resultsTable {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.resultsTable th {
+  background-color: #f8f9fa;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.resultsTable td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  vertical-align: top;
+}
+
+.resultsTable tr:last-child td {
+  border-bottom: none;
+}
+
+.recordName {
+  font-family: monospace;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.recordValue {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.recordValue:last-child {
+  margin-bottom: 0;
+}
+
+.valueText {
+  font-family: monospace;
+  font-size: 0.9rem;
+  word-break: break-all;
+  margin-left: 0.5rem;
+}
+
+.success {
+  color: #28a745;
+  font-size: 1.1rem;
+}
+
+.error {
+  color: #dc3545;
+  font-size: 1.1rem;
+}
+
+.noRecord {
+  color: #6c757d;
+  font-style: italic;
+}
