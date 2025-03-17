@@ -558,31 +558,40 @@ export class ResultAnalyzer {
       dkimResult.errors = dkimErrors.errors.concat(dkimResult.errors);
     }
     
-    // If no DKIM records were found, also check if they might exist on the www subdomain
+    // If no DKIM records were found, check for records at www subdomain or with duplicated domain
     if (hasNoRecords && dkimErrors.errors.length === 0) {
       try {
-        // Try to actually query for records at www subdomain
-        const wwwDomain = `www.${domain}`;
-        
         // Create a new DnsResolver instance
         const dnsResolver = new DnsResolver({ timeout: 10000 });
         
-        // Create promise for all queries
+        // Try to actually query for records at www subdomain
+        const wwwDomain = `www.${domain}`;
+        
+        // Also check for records with duplicated domain (domain.domain)
+        const duplicateDomain = `${domain}.${domain}`;
+        
+        // Create promise for all queries - both www subdomain and duplicate domain
         const queries = [
+          // Check www subdomain
           this.queryDkimRecord(dnsResolver, wwwDomain, 'k1', 'CNAME'),
           this.queryDkimRecord(dnsResolver, wwwDomain, 'k2', 'CNAME'),
           this.queryDkimRecord(dnsResolver, wwwDomain, 'k3', 'CNAME'),
+          // Check duplicate domain
+          this.queryDkimRecord(dnsResolver, duplicateDomain, 'k1', 'CNAME'),
+          this.queryDkimRecord(dnsResolver, duplicateDomain, 'k2', 'CNAME'),
+          this.queryDkimRecord(dnsResolver, duplicateDomain, 'k3', 'CNAME'),
         ];
         
         // Run all queries in parallel
         const results = await Promise.all(queries);
         
         // Check if any results have DKIM values
-        const wwwRecords: Record<string, string[]> = {};
-        let foundDkimRecords = false;
+        const errorRecords: Record<string, string[]> = {};
+        let foundDkimRecordsAtWWW = false;
+        let foundDkimRecordsAtDuplicate = false;
         
-        // Process the results
-        for (let i = 0; i < results.length; i++) {
+        // Process www subdomain results (first 3 results)
+        for (let i = 0; i < 3; i++) {
           const result = results[i];
           const keyName = `k${i+1}`;
           const keyPath = `${keyName}._domainkey.${wwwDomain}`;
@@ -595,16 +604,36 @@ export class ResultAnalyzer {
           );
           
           if (validCnames.length > 0) {
-            wwwRecords[keyPath] = validCnames;
-            foundDkimRecords = true;
+            errorRecords[keyPath] = validCnames;
+            foundDkimRecordsAtWWW = true;
+          }
+        }
+        
+        // Process duplicate domain results (next 3 results)
+        for (let i = 3; i < 6; i++) {
+          const result = results[i];
+          const keyName = `k${i-2}`; // Convert indices 3,4,5 back to k1,k2,k3
+          const keyPath = `${keyName}._domainkey.${duplicateDomain}`;
+          
+          // Only collect results that are actual DKIM CNAMEs
+          const validCnames = result.filter(value => 
+            value === 'dkim.mcsv.net' || 
+            value === 'dkim2.mcsv.net' || 
+            value === 'dkim3.mcsv.net'
+          );
+          
+          if (validCnames.length > 0) {
+            errorRecords[keyPath] = validCnames;
+            foundDkimRecordsAtDuplicate = true;
           }
         }
         
         // If we found DKIM records at www subdomain, report it
-        if (foundDkimRecords) {
+        if (foundDkimRecordsAtWWW) {
           // We need to create a special error directly since the domain we're checking
           // isn't www.domain but we found records at www.domain
-          for (const recordKey of Object.keys(wwwRecords)) {
+          const wwwKeys = Object.keys(errorRecords).filter(key => key.includes(`._domainkey.${wwwDomain}`));
+          for (const recordKey of wwwKeys) {
             const keyPrefix = recordKey.split('._domainkey.')[0];
             const correctRecord = `${keyPrefix}._domainkey.${domain}`;
             
@@ -617,6 +646,26 @@ export class ResultAnalyzer {
           }
           
           // Mark as invalid since we found DKIM records in the wrong place
+          dkimResult.isValid = false;
+        }
+        
+        // If we found DKIM records with duplicate domain, report it
+        if (foundDkimRecordsAtDuplicate) {
+          // We need to create a special error directly for the duplicate domain case
+          const duplicateKeys = Object.keys(errorRecords).filter(key => key.includes(`._domainkey.${duplicateDomain}`));
+          for (const recordKey of duplicateKeys) {
+            const keyPrefix = recordKey.split('._domainkey.')[0];
+            const correctRecord = `${keyPrefix}._domainkey.${domain}`;
+            
+            dkimResult.errors.push({
+              type: 'duplicateDomain',
+              message: 'DKIM record contains duplicate domain',
+              actual: recordKey,
+              expected: correctRecord
+            });
+          }
+          
+          // Mark as invalid since we found DKIM records with duplicate domain
           dkimResult.isValid = false;
         }
       } catch (error) {

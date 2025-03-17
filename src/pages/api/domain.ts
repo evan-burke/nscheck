@@ -109,13 +109,23 @@ export default async function handler(
     // Validate results
     const validation = await resultAnalyzer.validateResults(domain, results);
     
-    // Log the request
+    // Log the request with validation summary
     try {
+      // Extract error types for logging
+      const dkimErrors = validation.dkim.errors.map(err => err.type);
+      const dmarcErrors = validation.dmarc.errors.map(err => err.type);
+      
       await logger.log({
         domain,
         success: true,
         results,
-        ip: clientIp
+        ip: clientIp,
+        validationSummary: {
+          isValid: validation.isValid,
+          dkimErrors: dkimErrors.length > 0 ? dkimErrors : undefined,
+          dmarcErrors: dmarcErrors.length > 0 ? dmarcErrors : undefined,
+          consistencyIssue: !validation.consistency.consistent && validation.consistency.hasSuccessfulResults
+        }
       });
     } catch (logError) {
       console.error('Error logging successful request:', logError);

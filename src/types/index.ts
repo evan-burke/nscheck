@@ -60,6 +60,12 @@ export interface LogEntry {
   results?: Record<string, any>;
   ip?: string;
   errors?: ValidationError[];
+  validationSummary?: {
+    isValid: boolean;
+    dkimErrors?: string[];
+    dmarcErrors?: string[];
+    consistencyIssue?: boolean;
+  };
 }
 
 export interface LoggerOptions {

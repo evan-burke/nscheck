@@ -87,7 +87,7 @@ const DomainChecker: React.FC<DomainCheckerProps> = ({ onCheck, isLoading = fals
         
         <div className={styles.alphaNote}>
           <p>
-            NOTE: this is in ALPHA. feel free to play around with it, but expect there to be bugs at this stage. Report them <a href="https://docs.google.com/forms/d/e/1FAIpQLSfAKJ2jzpZL6bB3nvdw6PG1xH8UCot7B4es6vnPO6lbqX3ziw/viewform?usp=header" target="_blank" rel="noopener noreferrer">here</a> or DM Evan.
+            NOTE: this is in ALPHA. feel free to play around with it, but expect there to be bugs/quirks at this stage. Report them <a href="https://docs.google.com/forms/d/e/1FAIpQLSfAKJ2jzpZL6bB3nvdw6PG1xH8UCot7B4es6vnPO6lbqX3ziw/viewform?usp=header" target="_blank" rel="noopener noreferrer">here</a> or DM Evan.
             <br />
             This will only work for a specific email service provider's authentication records.
           </p>

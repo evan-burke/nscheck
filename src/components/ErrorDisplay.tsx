@@ -20,7 +20,7 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ validation }) => {
     return (
       <div className={styles.comparison}>
         <div className={styles.incorrectValue}>
-          <span>This is what it looks like:</span>
+          <span>This is what it looks like now:</span>
           <code>{error.actual}</code>
         </div>
         <div className={styles.correctValue}>
@@ -31,6 +31,10 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ validation }) => {
     );
   };
   
+  // Check if there's a 'wrongSubdomain' or 'duplicateDomain' error in DKIM errors
+  const hasSpecificDkimError = validation.dkim.errors.some(error => 
+    error.type === 'wrongSubdomain' || error.type === 'duplicateDomain');
+
   return (
     <div className={styles.container}>
       {/* DMARC Errors */}
@@ -85,29 +89,6 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ validation }) => {
         </div>
       )}
       
-      {/* Show info when using root domain DMARC */}
-      {validation.dmarc.usingRootDomain && validation.dmarc.isValid && (
-        <div className={styles.infoSection}>
-          <div className={styles.infoContent}>
-            <div className={styles.infoIcon}>ℹ️</div>
-            <div>
-              <p className={styles.infoMessage}>
-                Using DMARC record from root domain ({validation.dmarc.usingRootDomain}). This is valid, but for best practices, 
-                you may want to add a DMARC record specifically for this subdomain.
-              </p>
-              {validation.dmarc.rootDmarcRecords && validation.dmarc.rootDmarcRecords.length > 0 && (
-                <div className={styles.recordDetails}>
-                  <p className={styles.recordTitle}>Root domain DMARC record:</p>
-                  {validation.dmarc.rootDmarcRecords.map((record, idx) => (
-                    <code key={idx} className={styles.recordCode}>{record}</code>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      
       {/* DKIM Errors */}
       {validation.dkim.errors.length > 0 && (
         <div className={styles.errorSection}>
@@ -120,7 +101,7 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ validation }) => {
                   <div className={styles.errorIcon}>❌</div>
                   <div>
                     <p className={styles.errorMessage}>
-                      DKIM record published for incorrect subdomain
+                      DKIM record published for "www" rather than the root domain
                     </p>
                     {renderComparison(error)}
                   </div>
@@ -144,18 +125,19 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ validation }) => {
                   <div className={styles.errorIcon}>❌</div>
                   <div>
                     <p className={styles.errorMessage}>
-                      DKIM k2 and k3 records appear to be switched. Please check your DNS settings.
+                      DKIM k2 and k3 records appear to be switched - k2 is pointed to dkim3, and/or k3 pointed to dkim2. Please double check your settings.
                     </p>
                   </div>
                 </div>
               )}
               
-              {error.type === 'missingRecords' && (
+              {/* Only show missingRecords error if there's no specific DKIM error like wrongSubdomain or duplicateDomain */}
+              {error.type === 'missingRecords' && !hasSpecificDkimError && (
                 <div className={styles.errorContent}>
                   <div className={styles.errorIcon}>❌</div>
                   <div>
                     <p className={styles.errorMessage}>
-                      No DKIM records found. Please add either k2/k3 records or a k1 record.
+                      No DKIM records found. Please <a href="https://mailchimp.com/help/set-up-email-domain-authentication/" target="_blank" rel="noopener noreferrer" className={styles.link}>set up k2/k3 records</a>
                     </p>
                   </div>
                 </div>

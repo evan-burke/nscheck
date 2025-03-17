@@ -140,16 +140,38 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
         <thead>
           <tr>
             <th>Record</th>
+            <th>Authoritative</th>
             <th>Google DNS</th>
             <th>Cloudflare DNS</th>
             <th>OpenDNS</th>
-            <th>Authoritative</th>
           </tr>
         </thead>
         <tbody>
           {sortedRecordNames.map(recordName => (
             <tr key={recordName} className={shouldGrayOut(recordName) ? styles.grayedOutRow : ''}>
               <td className={styles.recordName}>{recordName}</td>
+              
+              {/* Authoritative */}
+              <td>
+                {recordName !== 'authoritativeServer' && Array.isArray(results.authoritative[recordName]) && results.authoritative[recordName].length > 0 ? (
+                  <div>
+                    {results.authoritative[recordName].map((value, i) => (
+                      <div key={i} className={`${styles.recordValue} ${shouldGrayOut(recordName) ? styles.grayedOut : ''}`}>
+                        {isValidValue(recordName, value) ? (
+                          <span className={styles.success} data-testid="success-icon">✓</span>
+                        ) : (
+                          <span className={shouldGrayOut(recordName) ? styles.grayedOutIcon : styles.error}>
+                            {shouldGrayOut(recordName) ? '•' : '✗'}
+                          </span>
+                        )}
+                        <span className={styles.valueText}>{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span className={styles.noRecord}>No record</span>
+                )}
+              </td>
               
               {/* Google */}
               <td>
@@ -200,28 +222,6 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
                 {results.openDNS[recordName]?.length > 0 ? (
                   <div>
                     {results.openDNS[recordName].map((value, i) => (
-                      <div key={i} className={`${styles.recordValue} ${shouldGrayOut(recordName) ? styles.grayedOut : ''}`}>
-                        {isValidValue(recordName, value) ? (
-                          <span className={styles.success} data-testid="success-icon">✓</span>
-                        ) : (
-                          <span className={shouldGrayOut(recordName) ? styles.grayedOutIcon : styles.error}>
-                            {shouldGrayOut(recordName) ? '•' : '✗'}
-                          </span>
-                        )}
-                        <span className={styles.valueText}>{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <span className={styles.noRecord}>No record</span>
-                )}
-              </td>
-              
-              {/* Authoritative */}
-              <td>
-                {recordName !== 'authoritativeServer' && Array.isArray(results.authoritative[recordName]) && results.authoritative[recordName].length > 0 ? (
-                  <div>
-                    {results.authoritative[recordName].map((value, i) => (
                       <div key={i} className={`${styles.recordValue} ${shouldGrayOut(recordName) ? styles.grayedOut : ''}`}>
                         {isValidValue(recordName, value) ? (
                           <span className={styles.success} data-testid="success-icon">✓</span>

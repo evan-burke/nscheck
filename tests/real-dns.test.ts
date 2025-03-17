@@ -13,6 +13,7 @@ const TEST_TIMEOUT = 15000;
 // Domains for testing
 const VALID_DOMAIN = 'inboxengineering.com';
 const WWW_ERROR_DOMAIN = 'email-delivery.org';
+const DUPLICATE_DOMAIN_ERROR = 'evan-burke.net';
 
 // Test with real DNS resolution against a valid domain
 testOrSkip('can resolve real DKIM records for a valid domain', async () => {
@@ -196,5 +197,104 @@ testOrSkip('can detect records published at www subdomain for email-delivery.org
     console.log("Expected record location:", commonErrorCheck.errors[0].expected);
   } else {
     console.log("No www subdomain records found - the domain may have been fixed");
+  }
+}, TEST_TIMEOUT);
+
+// Test to detect duplicate domain in DKIM records for evan-burke.net
+testOrSkip('can detect duplicate domain in DKIM records for evan-burke.net', async () => {
+  const resolver = new DnsResolver({ timeout: 10000 });
+  const dkimValidator = new DkimValidator();
+  
+  // Try to check both k2 and k3 records that might have duplicated domain
+  const normalK2Results = await resolver.queryAllProviders(DUPLICATE_DOMAIN_ERROR, 'CNAME', 'k2._domainkey');
+  const duplicateK2Results = await resolver.queryAllProviders(
+    `${DUPLICATE_DOMAIN_ERROR}.${DUPLICATE_DOMAIN_ERROR}`, 
+    'CNAME', 
+    'k2._domainkey'
+  );
+  
+  const normalK3Results = await resolver.queryAllProviders(DUPLICATE_DOMAIN_ERROR, 'CNAME', 'k3._domainkey');
+  const duplicateK3Results = await resolver.queryAllProviders(
+    `${DUPLICATE_DOMAIN_ERROR}.${DUPLICATE_DOMAIN_ERROR}`, 
+    'CNAME', 
+    'k3._domainkey'
+  );
+  
+  // Create consolidated records object to check
+  const consolidatedRecords: Record<string, string[]> = {};
+  
+  // Add any duplicate domain records we find
+  const addRecordsToConsolidated = (results: any) => {
+    Object.values(results).forEach(providerResults => {
+      Object.entries(providerResults).forEach(([recordName, values]) => {
+        // Skip metadata fields
+        if (recordName === 'authoritativeServer' || 
+            recordName === 'authoritativeServers' ||
+            !Array.isArray(values)) {
+          return;
+        }
+        
+        if (!consolidatedRecords[recordName]) {
+          consolidatedRecords[recordName] = [];
+        }
+        consolidatedRecords[recordName].push(...values);
+      });
+    });
+  };
+  
+  // Add all records to consolidated collection
+  [normalK2Results, duplicateK2Results, normalK3Results, duplicateK3Results].forEach(addRecordsToConsolidated);
+  
+  // Also check for actual duplicate domain in record keys
+  // We need to check for this pattern: k2._domainkey.domain.domain
+  const duplicateRecordPattern = `_domainkey.${DUPLICATE_DOMAIN_ERROR}.${DUPLICATE_DOMAIN_ERROR}`;
+  
+  // Direct check for authoritative nameserver records, which should have the freshest data
+  const authRecords: Record<string, string[]> = {};
+  Object.keys(normalK2Results.authoritative).forEach(key => {
+    if (key.includes(duplicateRecordPattern)) {
+      authRecords[key] = normalK2Results.authoritative[key] as string[];
+    }
+  });
+  Object.keys(normalK3Results.authoritative).forEach(key => {
+    if (key.includes(duplicateRecordPattern)) {
+      authRecords[key] = normalK3Results.authoritative[key] as string[];
+    }
+  });
+  
+  // Combine with consolidated records
+  Object.entries(authRecords).forEach(([key, values]) => {
+    if (!consolidatedRecords[key]) {
+      consolidatedRecords[key] = [];
+    }
+    consolidatedRecords[key].push(...values);
+  });
+  
+  // Check for the error
+  const duplicateDomainCheck = dkimValidator.checkCommonErrors(DUPLICATE_DOMAIN_ERROR, consolidatedRecords);
+  
+  // Log validation results
+  console.log("Duplicate domain error check:", duplicateDomainCheck);
+  console.log("Consolidated records:", consolidatedRecords);
+  
+  // Check if we found duplicate domain records
+  const hasDuplicateDomainRecords = Object.keys(consolidatedRecords).some(key => 
+    key.includes(duplicateRecordPattern)
+  );
+  
+  if (hasDuplicateDomainRecords || duplicateDomainCheck.errors.some(e => e.type === 'duplicateDomain')) {
+    expect(duplicateDomainCheck.isValid).toBe(false);
+    
+    // There should be at least one duplicateDomain error
+    const duplicateDomainErrors = duplicateDomainCheck.errors.filter(e => e.type === 'duplicateDomain');
+    expect(duplicateDomainErrors.length).toBeGreaterThan(0);
+    
+    // Log the first duplicate domain error
+    const firstError = duplicateDomainErrors[0];
+    console.log("Found duplicate domain error:");
+    console.log("Actual record location:", firstError.actual);
+    console.log("Expected record location:", firstError.expected);
+  } else {
+    console.log("No duplicate domain records found - the domain may have been fixed");
   }
 }, TEST_TIMEOUT);
