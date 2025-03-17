@@ -61,6 +61,7 @@ export interface LogEntry {
 export interface LoggerOptions {
   logDir: string;
   logFile?: string;
+  enableFileLogging?: boolean;
 }
 
 export interface RequestThrottlerOptions {

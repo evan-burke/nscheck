@@ -14,10 +14,11 @@ const throttler = new RequestThrottler(30, {
   // '192.168.1.*': 100 // Internal network
 });
 
-// Initialize logger
+// Initialize logger with file logging disabled for Vercel compatibility
 const logger = new Logger({ 
   logDir: process.env.LOG_DIR || './logs',
-  logFile: 'dns-queries.log'
+  logFile: 'dns-queries.log',
+  enableFileLogging: false // Disabled for Vercel compatibility
 });
 
 export default async function handler(
