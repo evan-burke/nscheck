@@ -3,7 +3,7 @@ export interface DnsLookupOptions {
 }
 
 export interface DnsProviderResult {
-  [key: string]: string[] | string[] | string | null;
+  [key: string]: string[] | string | null | undefined;
   authoritativeServer?: string | null;
   authoritativeServers?: string[];
 }

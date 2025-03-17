@@ -425,7 +425,7 @@ export class ResultAnalyzer {
     });
     
     // Check each record for consistency
-    for (const recordName of recordNames) {
+    for (const recordName of Array.from(recordNames)) {
       // Skip special fields like authoritativeServer and authoritativeServers
       if (recordName === 'authoritativeServer' || recordName === 'authoritativeServers') {
         continue;
@@ -507,7 +507,7 @@ export class ResultAnalyzer {
     
     // Deduplicate records
     Object.keys(consolidatedRecords).forEach(key => {
-      consolidatedRecords[key] = [...new Set(consolidatedRecords[key])];
+      consolidatedRecords[key] = Array.from(new Set(consolidatedRecords[key]));
     });
     
     // Validate DKIM
@@ -525,6 +525,9 @@ export class ResultAnalyzer {
       try {
         // Try to actually query for records at www subdomain
         const wwwDomain = `www.${domain}`;
+        
+        // Create a new DnsResolver instance
+        const dnsResolver = new DnsResolver({ timeout: 10000 });
         
         // Create promise for all queries
         const queries = [

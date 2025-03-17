@@ -28,12 +28,12 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
   const k3Records = Array.from(allRecordNames).find(name => name.includes('k3._domainkey'));
   
   // Check if both k2 and k3 exist and have valid values in at least one provider
-  const hasValidK2 = k2Records && Object.values(results).some(provider => 
-    provider[k2Records]?.some(value => value === 'dkim2.mcsv.net')
+  const hasValidK2 = k2Records && Object.values(results).some((provider: Record<string, string[]>) => 
+    provider[k2Records]?.some((value: string) => value === 'dkim2.mcsv.net')
   );
   
-  const hasValidK3 = k3Records && Object.values(results).some(provider => 
-    provider[k3Records]?.some(value => value === 'dkim3.mcsv.net')
+  const hasValidK3 = k3Records && Object.values(results).some((provider: Record<string, string[]>) => 
+    provider[k3Records]?.some((value: string) => value === 'dkim3.mcsv.net')
   );
   
   const hasValidK2K3 = hasValidK2 && hasValidK3;
