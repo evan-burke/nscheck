@@ -51,15 +51,54 @@
   text-align: center;
   margin-bottom: 2rem;
   padding: 1rem;
-  background-color: #e3ffe3;
   border-radius: 12px;
   align-self: center;
+  background-color: #e3ffe3;
+  animation: successPulse 1.2s 2 ease-in-out;
+}
+
+@keyframes successPulse {
+  0% {
+    background-color: #e3ffe3;
+  }
+  50% {
+    background-color: #fff5c2;
+  }
+  100% {
+    background-color: #e3ffe3;
+  }
 }
 
 .success p {
   font-size: 1.5rem;
   font-weight: 500;
   color: #28a745;
+  animation: textPulse 1.2s 2 ease-in-out;
+}
+
+@keyframes textPulse {
+  0% {
+    color: #28a745;
+  }
+  50% {
+    color: #ffe01b;
+  }
+  100% {
+    color: #28a745;
+  }
+}
+
+.fadeOut {
+  animation: fadeOut 0.2s forwards ease-out;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 .error {

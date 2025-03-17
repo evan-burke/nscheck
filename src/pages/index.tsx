@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import DomainChecker from '../components/DomainChecker';
 import ResultsGrid from '../components/ResultsGrid';
@@ -12,8 +12,23 @@ export default function Home() {
   const [results, setResults] = useState<DnsResult | null>(null);
   const [validation, setValidation] = useState<ValidationSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isFadingOut, setIsFadingOut] = useState<boolean>(false);
+
+  // Handle fade-out transition when loading new results
+  useEffect(() => {
+    if (!isLoading) {
+      setIsFadingOut(false);
+    }
+  }, [isLoading]);
 
   const handleCheckDomain = async (domainToCheck: string) => {
+    // If we already have results or an error, fade them out first
+    if (results || error) {
+      setIsFadingOut(true);
+      // Wait for the fade-out animation to complete before proceeding
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
     setDomain(domainToCheck);
     setIsLoading(true);
     setError(null);
@@ -53,16 +68,17 @@ export default function Home() {
         />
         
         {error && (
-          <div className={styles.error}>
+          <div className={`${styles.error} ${isFadingOut ? styles.fadeOut : ''}`}>
             <p>{error}</p>
           </div>
         )}
         
         {results && validation && (
-          <div className={styles.results}>
+          <div className={`${styles.results} ${isFadingOut ? styles.fadeOut : ''}`}>
             
             {validation.isValid && (
               <div className={styles.success}>
+              {/* [DO NOT MODIFY] */}
                 <p>✅ You're golden! Everything checks out. 😉</p>
               </div>
             )}
