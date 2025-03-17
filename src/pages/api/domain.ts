@@ -7,11 +7,13 @@ import { ValidationSummary } from '../../types';
 const dnsResolver = new DnsResolver({ timeout: 10000 });
 const resultAnalyzer = new ResultAnalyzer();
 
-// Configure throttling: 30 requests per hour per IP by default
-const throttler = new RequestThrottler(30, {
+// Configure throttling: 120 requests per hour per IP by default
+const throttler = new RequestThrottler(120, {
   // Example of overriding limits for specific IPs or ranges
-  // '127.0.0.1': 1000, // Local development
-  // '192.168.1.*': 100 // Internal network
+  '127.0.0.1': 1000, // Local development - allows 1000 requests per hour
+  '192.168.1.*': 100, // Internal network - allows 100 requests per hour
+  // Add your custom IP overrides below
+  '76.165.67.45': 1000, // Custom override example - allows 1000 requests per hour
 });
 
 // Initialize logger with file logging disabled for Vercel compatibility
