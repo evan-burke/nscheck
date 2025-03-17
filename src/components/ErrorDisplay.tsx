@@ -64,7 +64,7 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ validation }) => {
                         className={styles.link}
                       >
                         Dmarcian's domain inspector
-                      </a>
+                      </a> for guidance on solving the problem.
                     </p>
                   </div>
                 </div>
@@ -75,7 +75,7 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ validation }) => {
                   <div className={styles.errorIcon}>⚠️</div>
                   <div>
                     <p className={styles.errorMessage}>
-                      No DMARC record was found. We recommend setting up DMARC to improve email deliverability.
+                      No DMARC record found. Google and Yahoo require a DMARC record for bulk senders.
                     </p>
                   </div>
                 </div>

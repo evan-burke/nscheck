@@ -69,6 +69,11 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
     } else if (recordName.includes('k1._domainkey') && value === 'dkim.mcsv.net') {
       return true;
     } else if (recordName.includes('_dmarc') && value.includes('v=DMARC1')) {
+      // For DMARC records, check if validation has errors
+      if (validation.dmarc.errors.length > 0) {
+        // If there are DMARC errors, the record is not valid even if it contains v=DMARC1
+        return false;
+      }
       return true;
     }
     return false;

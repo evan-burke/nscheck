@@ -441,11 +441,18 @@ export class ResultAnalyzer {
           return;
         }
         
-        const value = JSON.stringify(providerResults[recordName] || []);
+        // If this is a DMARC record, we need to sort them to ensure consistency check works correctly
+        let recordsArray = providerResults[recordName] || [];
+        if (recordName.includes('_dmarc') && recordsArray.length > 0) {
+          // Sort DMARC records to ensure consistent comparison
+          recordsArray = [...recordsArray].sort();
+        }
+        
+        const value = JSON.stringify(recordsArray);
         recordValues.set(provider, value);
         
         // Check if we have any valid results
-        if (providerResults[recordName] && providerResults[recordName].length > 0) {
+        if (recordsArray.length > 0) {
           hasValidResults = true;
         }
       });
@@ -587,7 +594,8 @@ export class ResultAnalyzer {
     }
     
     // Validate DMARC
-    const dmarcRecords = consolidatedRecords[`_dmarc.${domain}`] || [];
+    // Sort DMARC records to ensure consistent validation results
+    const dmarcRecords = (consolidatedRecords[`_dmarc.${domain}`] || []).sort();
     const dmarcResult = dmarcValidator.validate(dmarcRecords);
     
     // Check consistency
