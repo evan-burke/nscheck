@@ -1,5 +1,6 @@
 import React from 'react';
 import { DnsResult, ValidationSummary } from '../types';
+import ErrorDisplay from './ErrorDisplay';
 import styles from '../styles/ResultsGrid.module.css';
 
 interface ResultsGridProps {
@@ -79,13 +80,12 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
   
   return (
     <div className={styles.container}>
-      {/* Display authoritative server info */}
-      <div className={styles.authServerInfo}>
-        <p><strong>Authoritative nameserver used:</strong> {authoritativeServer}</p>
-        {authoritativeServers.length > 0 && (
-          <p><strong>All authoritative nameservers:</strong> {authoritativeServers.join(', ')}</p>
-        )}
-      </div>
+      {/* Display validation errors */}
+      {!validation.isValid && (
+        <div className={styles.errorsContainer}>
+          <ErrorDisplay validation={validation} />
+        </div>
+      )}
 
       {!validation.consistency.consistent && validation.consistency.hasSuccessfulResults && (
         <div className={styles.warning}>
@@ -195,6 +195,14 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
           ))}
         </tbody>
       </table>
+      
+      {/* Display authoritative server info - moved below the results table */}
+      <div className={styles.authServerInfo}>
+        <p><strong>Authoritative nameserver used:</strong> {authoritativeServer}</p>
+        {authoritativeServers.length > 0 && (
+          <p><strong>All authoritative nameservers:</strong> {authoritativeServers.join(', ')}</p>
+        )}
+      </div>
     </div>
   );
 };

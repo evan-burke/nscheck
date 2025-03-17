@@ -100,7 +100,7 @@ export default async function handler(
     };
     
     // Validate results
-    const validation = resultAnalyzer.validateResults(domain, results);
+    const validation = await resultAnalyzer.validateResults(domain, results);
     
     // Log the request
     await logger.log({

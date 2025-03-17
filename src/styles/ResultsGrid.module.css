@@ -25,19 +25,37 @@
 
 .resultsTable {
   width: 100%;
-  border-collapse: collapse;
-  border-radius: 8px;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: #fafbfc;
 }
 
 .resultsTable th {
-  background-color: #f8f9fa;
+  background-color: #f1f3f5;
   text-align: left;
   padding: 0.75rem 1rem;
   font-weight: 600;
   color: #333;
   border-bottom: 2px solid #e0e0e0;
+}
+
+.resultsTable th:first-child {
+  border-top-left-radius: 12px;
+}
+
+.resultsTable th:last-child {
+  border-top-right-radius: 12px;
+}
+
+.resultsTable tr:last-child td:first-child {
+  border-bottom-left-radius: 12px;
+}
+
+.resultsTable tr:last-child td:last-child {
+  border-bottom-right-radius: 12px;
 }
 
 .resultsTable td {
@@ -89,10 +107,16 @@
 }
 
 .authServerInfo {
+  margin-top: 2.5rem;
   margin-bottom: 1.5rem;
   padding: 0.5rem 1rem;
   background-color: #f8f9fa;
   border-radius: 5px;
   border-left: 4px solid #5d6d7e;
   font-size: 0.9rem;
+}
+
+.errorsContainer {
+  width: 100%;
+  margin-bottom: 1.5rem;
 }

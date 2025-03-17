@@ -257,21 +257,61 @@ export class DkimValidator {
     };
     
     // Check for records published at www subdomain
+    // Two possible patterns:
+    // 1. k2._domainkey.www.domain.com (the direct case)
+    // 2. k2._domainkey.domain.com with actual domain as www.domain.com (the case we need to check now)
+    
+    // Look for www in the domain name part of any record
     const wwwRecords = Object.keys(records).filter(k => 
-      k.includes(`_domainkey.www.${domain}`)
+      k.includes(`_domainkey.www.`) || 
+      (k.includes(`_domainkey.`) && domain.startsWith('www.'))
     );
     
     if (wwwRecords.length > 0) {
-      result.isValid = false;
-      wwwRecords.forEach(record => {
-        const correctRecord = record.replace(`www.${domain}`, domain);
-        result.errors.push({
-          type: 'wrongSubdomain',
-          message: 'DKIM record published for incorrect subdomain',
-          actual: record,
-          expected: correctRecord
-        });
-      });
+      // Only report www errors if we find actual DKIM CNAMEs
+      let foundDkimRecords = false;
+      
+      for (const record of wwwRecords) {
+        const recordValues = records[record] || [];
+        
+        // Check if any of the values are actual DKIM CNAMEs
+        const hasDkimCnames = recordValues.some(value => 
+          value === 'dkim.mcsv.net' || 
+          value === 'dkim2.mcsv.net' || 
+          value === 'dkim3.mcsv.net'
+        );
+        
+        if (hasDkimCnames) {
+          foundDkimRecords = true;
+          let correctRecord;
+          
+          if (domain.startsWith('www.')) {
+            // If we're checking a www domain, the correct record is on the base domain
+            const baseDomain = domain.substring(4); // Remove "www."
+            correctRecord = record.replace(`_domainkey.${domain}`, `_domainkey.${baseDomain}`);
+            result.errors.push({
+              type: 'wrongSubdomain',
+              message: 'DKIM record published for incorrect subdomain',
+              actual: record,
+              expected: correctRecord
+            });
+          } else {
+            // Standard case: records are at www but should be directly at domain
+            correctRecord = record.replace(`www.${domain}`, domain);
+            result.errors.push({
+              type: 'wrongSubdomain',
+              message: 'DKIM record published for incorrect subdomain',
+              actual: record,
+              expected: correctRecord
+            });
+          }
+        }
+      }
+      
+      // Only mark as invalid if we found actual DKIM records
+      if (foundDkimRecords) {
+        result.isValid = false;
+      }
     }
     
     // Check for duplicate domain in record
@@ -352,6 +392,24 @@ export class DmarcValidator {
  */
 export class ResultAnalyzer {
   /**
+   * Helper method to query a specific DKIM record
+   */
+  private async queryDkimRecord(
+    dnsResolver: DnsResolver, 
+    domain: string, 
+    key: string, 
+    recordType: string
+  ): Promise<string[]> {
+    try {
+      // Use Google DNS for reliable results
+      const results = await dnsResolver.queryWithTimeout(`${key}._domainkey.${domain}`, recordType, '8.8.8.8');
+      return results;
+    } catch (error) {
+      return [];
+    }
+  }
+
+  /**
    * Check if DNS results are consistent across providers
    */
   checkConsistency(results: DnsResult): ConsistencyResult {
@@ -410,7 +468,7 @@ export class ResultAnalyzer {
   /**
    * Validate all aspects of DNS results
    */
-  validateResults(domain: string, results: DnsResult): ValidationSummary {
+  async validateResults(domain: string, results: DnsResult): Promise<ValidationSummary> {
     // Initialize services
     const dkimValidator = new DkimValidator();
     const dmarcValidator = new DmarcValidator();
@@ -418,6 +476,17 @@ export class ResultAnalyzer {
     // Normalize results into a single record set
     // Prefer records from authoritative nameserver if available
     const consolidatedRecords: Record<string, string[]> = {};
+    
+    // Check if the domain might have www related issues
+    const hasNoRecords = !Object.values(results).some(providerResults => {
+      return Object.keys(providerResults).some(key => 
+        (key.includes(`k1._domainkey.${domain}`) || 
+         key.includes(`k2._domainkey.${domain}`) || 
+         key.includes(`k3._domainkey.${domain}`)) && 
+        Array.isArray(providerResults[key]) && 
+        providerResults[key].length > 0
+      );
+    });
     
     // First, add all records from all providers
     Object.values(results).forEach(providerResults => {
@@ -445,8 +514,73 @@ export class ResultAnalyzer {
     const dkimResult = dkimValidator.validate(domain, consolidatedRecords);
     const dkimErrors = dkimValidator.checkCommonErrors(domain, consolidatedRecords);
     
-    if (!dkimResult.isValid) {
-      dkimResult.errors.push(...dkimErrors.errors);
+    // Always check for common errors, whether DKIM records were found or not
+    if (dkimErrors.errors.length > 0) {
+      // If we have common errors like www subdomain, make these the primary errors
+      dkimResult.errors = dkimErrors.errors.concat(dkimResult.errors);
+    }
+    
+    // If no DKIM records were found, also check if they might exist on the www subdomain
+    if (hasNoRecords && dkimErrors.errors.length === 0) {
+      try {
+        // Try to actually query for records at www subdomain
+        const wwwDomain = `www.${domain}`;
+        
+        // Create promise for all queries
+        const queries = [
+          this.queryDkimRecord(dnsResolver, wwwDomain, 'k1', 'CNAME'),
+          this.queryDkimRecord(dnsResolver, wwwDomain, 'k2', 'CNAME'),
+          this.queryDkimRecord(dnsResolver, wwwDomain, 'k3', 'CNAME'),
+        ];
+        
+        // Run all queries in parallel
+        const results = await Promise.all(queries);
+        
+        // Check if any results have DKIM values
+        const wwwRecords: Record<string, string[]> = {};
+        let foundDkimRecords = false;
+        
+        // Process the results
+        for (let i = 0; i < results.length; i++) {
+          const result = results[i];
+          const keyName = `k${i+1}`;
+          const keyPath = `${keyName}._domainkey.${wwwDomain}`;
+          
+          // Only collect results that are actual DKIM CNAMEs
+          const validCnames = result.filter(value => 
+            value === 'dkim.mcsv.net' || 
+            value === 'dkim2.mcsv.net' || 
+            value === 'dkim3.mcsv.net'
+          );
+          
+          if (validCnames.length > 0) {
+            wwwRecords[keyPath] = validCnames;
+            foundDkimRecords = true;
+          }
+        }
+        
+        // If we found DKIM records at www subdomain, report it
+        if (foundDkimRecords) {
+          // We need to create a special error directly since the domain we're checking
+          // isn't www.domain but we found records at www.domain
+          for (const recordKey of Object.keys(wwwRecords)) {
+            const keyPrefix = recordKey.split('._domainkey.')[0];
+            const correctRecord = `${keyPrefix}._domainkey.${domain}`;
+            
+            dkimResult.errors.push({
+              type: 'wrongSubdomain',
+              message: 'DKIM record published for incorrect subdomain',
+              actual: recordKey,
+              expected: correctRecord
+            });
+          }
+          
+          // Mark as invalid since we found DKIM records in the wrong place
+          dkimResult.isValid = false;
+        }
+      } catch (error) {
+        // Ignore errors - this is just a supplementary check
+      }
     }
     
     // Validate DMARC

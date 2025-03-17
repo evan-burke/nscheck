@@ -9,14 +9,39 @@ interface DomainCheckerProps {
 const DomainChecker: React.FC<DomainCheckerProps> = ({ onCheck, isLoading = false }) => {
   const [domain, setDomain] = useState<string>('');
   const [isChecking, setIsChecking] = useState<boolean>(false);
+  const [showWwwPrompt, setShowWwwPrompt] = useState<boolean>(false);
+  const [rootDomain, setRootDomain] = useState<string>('');
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (!domain.trim()) {
+    const trimmedDomain = domain.trim();
+    if (!trimmedDomain) {
       return;
     }
     
+    // Check if the domain starts with www.
+    if (trimmedDomain.toLowerCase().startsWith('www.')) {
+      const stripped = trimmedDomain.substring(4); // Remove 'www.'
+      setRootDomain(stripped);
+      setShowWwwPrompt(true);
+      return;
+    }
+    
+    // Proceed with the check
+    setIsChecking(true);
+    onCheck(trimmedDomain);
+  };
+  
+  const handleUseRootDomain = () => {
+    setDomain(rootDomain);
+    setShowWwwPrompt(false);
+    setIsChecking(true);
+    onCheck(rootDomain);
+  };
+  
+  const handleKeepWww = () => {
+    setShowWwwPrompt(false);
     setIsChecking(true);
     onCheck(domain.trim());
   };
@@ -35,7 +60,7 @@ const DomainChecker: React.FC<DomainCheckerProps> = ({ onCheck, isLoading = fals
   return (
     <div className={containerClass} data-testid="domain-checker-container">
       <h1 className={styles.title}>
-        Check your domain's mail configuration
+        authcheck 😇
       </h1>
       
       <form onSubmit={handleSubmit} className={styles.form}>
@@ -44,7 +69,7 @@ const DomainChecker: React.FC<DomainCheckerProps> = ({ onCheck, isLoading = fals
             type="text"
             value={domain}
             onChange={(e) => setDomain(e.target.value)}
-            placeholder="Enter domain (e.g. example.com)"
+            placeholder="domain to check"
             className={styles.input}
             disabled={isLoading}
           />
@@ -56,14 +81,37 @@ const DomainChecker: React.FC<DomainCheckerProps> = ({ onCheck, isLoading = fals
           >
             {isLoading ? (
               <span className={styles.spinner} aria-hidden="true"></span>
-            ) : 'Check'}
+            ) : "Let's go!"}
           </button>
         </div>
       </form>
       
+      {showWwwPrompt && (
+        <div className={styles.wwwPrompt}>
+          <p>
+            DKIM records are usually published on the root domain, not on www subdomains.
+            Would you like to check <strong>{rootDomain}</strong> instead?
+          </p>
+          <div className={styles.promptButtons}>
+            <button 
+              className={`${styles.button} ${styles.primaryButton}`}
+              onClick={handleUseRootDomain}
+            >
+              Yes, use {rootDomain}
+            </button>
+            <button 
+              className={`${styles.button} ${styles.secondaryButton}`}
+              onClick={handleKeepWww}
+            >
+              No, keep {domain.trim()}
+            </button>
+          </div>
+        </div>
+      )}
+      
       {isChecking && (
         <div className={styles.loadingIndicator}>
-          <p>Checking mail configuration...</p>
+          <p>Checking mail configuration 🧑‍💻🧑‍💻🧑‍💻</p>
           <div className={styles.progress}>
             <div className={styles.progressBar} />
           </div>

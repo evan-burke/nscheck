@@ -111,12 +111,13 @@ jest.mock('../src/services/dns', () => {
         }
         return { consistent: true, hasSuccessfulResults: true };
       }),
-      validateResults: jest.fn().mockReturnValue({
+      validateResults: jest.fn().mockResolvedValue({
         isValid: true,
         dkim: { isValid: true, errors: [] },
         dmarc: { isValid: true, errors: [] },
         consistency: { consistent: true, hasSuccessfulResults: true }
-      })
+      }),
+      queryDkimRecord: jest.fn().mockResolvedValue([])
     })),
     RequestThrottler: jest.fn().mockImplementation((defaultLimit, overrides) => {
       let requestCounts = new Map();

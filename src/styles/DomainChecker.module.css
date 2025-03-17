@@ -17,7 +17,7 @@
 }
 
 .title {
-  font-size: 2rem;
+  font-size: 5rem;
   margin-bottom: 2rem;
   text-align: center;
   color: #333;
@@ -37,10 +37,10 @@
 
 .input {
   flex: 1;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 1.5rem;
   font-size: 1rem;
   border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  border-radius: 38px;
   transition: border-color 0.2s ease;
   font-family: 'Inter', sans-serif;
 }
@@ -56,7 +56,7 @@
   color: white;
   font-weight: 500;
   border: none;
-  border-radius: 8px;
+  border-radius: 38px;
   cursor: pointer;
   transition: background-color 0.2s ease;
   font-family: 'Inter', sans-serif;
@@ -127,4 +127,48 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.wwwPrompt {
+  width: 100%;
+  max-width: 600px;
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  background-color: #f0f7ff;
+  border-radius: 8px;
+  border-left: 4px solid #3498db;
+  color: #333;
+  text-align: center;
+}
+
+.wwwPrompt p {
+  margin-bottom: 1.25rem;
+  line-height: 1.5;
+}
+
+.wwwPrompt strong {
+  font-weight: 600;
+  color: #2980b9;
+}
+
+.promptButtons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.primaryButton {
+  background-color: #3498db;
+}
+
+.primaryButton:hover {
+  background-color: #2980b9;
+}
+
+.secondaryButton {
+  background-color: #95a5a6;
+}
+
+.secondaryButton:hover {
+  background-color: #7f8c8d;
 }

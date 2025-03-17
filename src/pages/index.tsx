@@ -40,7 +40,7 @@ export default function Home() {
   return (
     <div className={styles.container}>
       <Head>
-        <title>NSCheck - Verify Your Mail Domain Configuration</title>
+        <title>d.nscheck</title>
         <meta name="description" content="Check your DNS configuration for proper DKIM and DMARC setup" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
@@ -60,14 +60,11 @@ export default function Home() {
         
         {results && validation && (
           <div className={styles.results}>
-            <h2>Results for {domain}</h2>
             
-            {validation.isValid ? (
+            {validation.isValid && (
               <div className={styles.success}>
-                <p>✅ All mail configuration checks passed!</p>
+                <p>✅ You're golden! Everything checks out. 😉</p>
               </div>
-            ) : (
-              <ErrorDisplay validation={validation} />
             )}
             
             <ResultsGrid 
