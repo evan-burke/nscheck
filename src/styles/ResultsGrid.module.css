@@ -106,6 +106,19 @@
   font-style: italic;
 }
 
+.grayedOutRow {
+  opacity: 0.5;
+}
+
+.grayedOut {
+  opacity: 0.5;
+}
+
+.grayedOutIcon {
+  color: #999;
+  font-size: 1.1rem;
+}
+
 .authServerInfo {
   margin-top: 2.5rem;
   margin-bottom: 1.5rem;
@@ -114,6 +127,24 @@
   border-radius: 5px;
   border-left: 4px solid #5d6d7e;
   font-size: 0.9rem;
+}
+
+.dmarcInheritanceBox {
+  width: 100%;
+  margin: 1.5rem 0;
+}
+
+.dmarcInheritance {
+  padding: 0.8rem 1rem;
+  background-color: #f0f7ff;
+  border-radius: 8px;
+  border-left: 4px solid #3498db;
+  margin: 0;
+}
+
+.rootDomain {
+  font-weight: 600;
+  color: #2980b9;
 }
 
 .errorsContainer {

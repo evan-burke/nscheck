@@ -28,13 +28,21 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
   const k3Records = Array.from(allRecordNames).find(name => name.includes('k3._domainkey'));
   
   // Check if both k2 and k3 exist and have valid values in at least one provider
-  const hasValidK2 = k2Records && Object.values(results).some((provider: Record<string, string[]>) => 
-    provider[k2Records]?.some((value: string) => value === 'dkim2.mcsv.net')
-  );
+  const hasValidK2 = k2Records && Object.values(results).some(provider => {
+    if (provider && typeof provider === 'object' && k2Records in provider) {
+      const values = provider[k2Records];
+      return Array.isArray(values) && values.some(value => value === 'dkim2.mcsv.net');
+    }
+    return false;
+  });
   
-  const hasValidK3 = k3Records && Object.values(results).some((provider: Record<string, string[]>) => 
-    provider[k3Records]?.some((value: string) => value === 'dkim3.mcsv.net')
-  );
+  const hasValidK3 = k3Records && Object.values(results).some(provider => {
+    if (provider && typeof provider === 'object' && k3Records in provider) {
+      const values = provider[k3Records];
+      return Array.isArray(values) && values.some(value => value === 'dkim3.mcsv.net');
+    }
+    return false;
+  });
   
   const hasValidK2K3 = hasValidK2 && hasValidK3;
       
@@ -56,6 +64,16 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
     const keyA = Object.keys(order).find(key => a.includes(key)) || '';
     const keyB = Object.keys(order).find(key => b.includes(key)) || '';
     
+    // If both contain _dmarc, give preference to the requested domain's _dmarc
+    if (keyA === '_dmarc' && keyB === '_dmarc') {
+      // If this is a root domain DMARC record being used, put it after the original domain
+      const isRootDmarcA = validation.dmarc.usingRootDomain && a.includes(validation.dmarc.usingRootDomain);
+      const isRootDmarcB = validation.dmarc.usingRootDomain && b.includes(validation.dmarc.usingRootDomain);
+      
+      if (isRootDmarcA && !isRootDmarcB) return 1;
+      if (!isRootDmarcA && isRootDmarcB) return -1;
+    }
+    
     return (order[keyA] || 99) - (order[keyB] || 99);
   });
   
@@ -74,9 +92,25 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
         // If there are DMARC errors, the record is not valid even if it contains v=DMARC1
         return false;
       }
+      
+      // If this is the subdomain DMARC record and we're using root domain DMARC, don't show it as valid
+      if (validation.dmarc.usingRootDomain && 
+          validation.dmarc.originalDomain && 
+          recordName === `_dmarc.${validation.dmarc.originalDomain}`) {
+        return false;
+      }
+      
       return true;
     }
     return false;
+  };
+  
+  // Helper to determine if a record should be grayed out
+  const shouldGrayOut = (recordName: string): boolean => {
+    // Gray out subdomain DMARC when using root domain DMARC
+    return Boolean(validation.dmarc.usingRootDomain && 
+           validation.dmarc.originalDomain && 
+           recordName === `_dmarc.${validation.dmarc.originalDomain}`);
   };
 
   // Extract the authoritative server info
@@ -114,7 +148,7 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
         </thead>
         <tbody>
           {sortedRecordNames.map(recordName => (
-            <tr key={recordName}>
+            <tr key={recordName} className={shouldGrayOut(recordName) ? styles.grayedOutRow : ''}>
               <td className={styles.recordName}>{recordName}</td>
               
               {/* Google */}
@@ -122,11 +156,13 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
                 {results.google[recordName]?.length > 0 ? (
                   <div>
                     {results.google[recordName].map((value, i) => (
-                      <div key={i} className={styles.recordValue}>
+                      <div key={i} className={`${styles.recordValue} ${shouldGrayOut(recordName) ? styles.grayedOut : ''}`}>
                         {isValidValue(recordName, value) ? (
                           <span className={styles.success} data-testid="success-icon">✓</span>
                         ) : (
-                          <span className={styles.error}>✗</span>
+                          <span className={shouldGrayOut(recordName) ? styles.grayedOutIcon : styles.error}>
+                            {shouldGrayOut(recordName) ? '•' : '✗'}
+                          </span>
                         )}
                         <span className={styles.valueText}>{value}</span>
                       </div>
@@ -142,11 +178,13 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
                 {results.cloudflare[recordName]?.length > 0 ? (
                   <div>
                     {results.cloudflare[recordName].map((value, i) => (
-                      <div key={i} className={styles.recordValue}>
+                      <div key={i} className={`${styles.recordValue} ${shouldGrayOut(recordName) ? styles.grayedOut : ''}`}>
                         {isValidValue(recordName, value) ? (
                           <span className={styles.success} data-testid="success-icon">✓</span>
                         ) : (
-                          <span className={styles.error}>✗</span>
+                          <span className={shouldGrayOut(recordName) ? styles.grayedOutIcon : styles.error}>
+                            {shouldGrayOut(recordName) ? '•' : '✗'}
+                          </span>
                         )}
                         <span className={styles.valueText}>{value}</span>
                       </div>
@@ -162,11 +200,13 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
                 {results.openDNS[recordName]?.length > 0 ? (
                   <div>
                     {results.openDNS[recordName].map((value, i) => (
-                      <div key={i} className={styles.recordValue}>
+                      <div key={i} className={`${styles.recordValue} ${shouldGrayOut(recordName) ? styles.grayedOut : ''}`}>
                         {isValidValue(recordName, value) ? (
                           <span className={styles.success} data-testid="success-icon">✓</span>
                         ) : (
-                          <span className={styles.error}>✗</span>
+                          <span className={shouldGrayOut(recordName) ? styles.grayedOutIcon : styles.error}>
+                            {shouldGrayOut(recordName) ? '•' : '✗'}
+                          </span>
                         )}
                         <span className={styles.valueText}>{value}</span>
                       </div>
@@ -182,11 +222,13 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
                 {recordName !== 'authoritativeServer' && Array.isArray(results.authoritative[recordName]) && results.authoritative[recordName].length > 0 ? (
                   <div>
                     {results.authoritative[recordName].map((value, i) => (
-                      <div key={i} className={styles.recordValue}>
+                      <div key={i} className={`${styles.recordValue} ${shouldGrayOut(recordName) ? styles.grayedOut : ''}`}>
                         {isValidValue(recordName, value) ? (
                           <span className={styles.success} data-testid="success-icon">✓</span>
                         ) : (
-                          <span className={styles.error}>✗</span>
+                          <span className={shouldGrayOut(recordName) ? styles.grayedOutIcon : styles.error}>
+                            {shouldGrayOut(recordName) ? '•' : '✗'}
+                          </span>
                         )}
                         <span className={styles.valueText}>{value}</span>
                       </div>
@@ -200,6 +242,16 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
           ))}
         </tbody>
       </table>
+      
+      {/* Display DMARC inheritance information if applicable - positioned between table and authoritative info */}
+      {validation.dmarc.usingRootDomain && (
+        <div className={styles.dmarcInheritanceBox}>
+          <p className={styles.dmarcInheritance}>
+            <strong>Note:</strong> DMARC not found for {validation.dmarc.originalDomain || 'subdomain'}; 
+            using <span className={styles.rootDomain}>{validation.dmarc.usingRootDomain}</span> DMARC policy instead. This is fine - DMARC is designed to fall back to the root domain if a subdomain record is not present.
+          </p>
+        </div>
+      )}
       
       {/* Display authoritative server info - moved below the results table */}
       <div className={styles.authServerInfo}>

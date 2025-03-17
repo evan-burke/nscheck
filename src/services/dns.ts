@@ -408,6 +408,37 @@ export class ResultAnalyzer {
       return [];
     }
   }
+  
+  /**
+   * Extract the root domain from a subdomain
+   * For example, sub.example.com -> example.com
+   */
+  private extractRootDomain(domain: string): string | null {
+    // Don't process if already a root domain with only one dot
+    const parts = domain.split('.');
+    if (parts.length <= 2) {
+      return null;
+    }
+    
+    // Get the last two parts (e.g. example.com from sub.example.com)
+    return parts.slice(-2).join('.');
+  }
+  
+  /**
+   * Helper method to query a DMARC record
+   */
+  private async queryDmarcRecord(
+    dnsResolver: DnsResolver,
+    domain: string
+  ): Promise<string[]> {
+    try {
+      // Use Google DNS for reliable results
+      const results = await dnsResolver.queryWithTimeout(`_dmarc.${domain}`, 'TXT', '8.8.8.8');
+      return results;
+    } catch (error) {
+      return [];
+    }
+  }
 
   /**
    * Check if DNS results are consistent across providers
@@ -595,8 +626,44 @@ export class ResultAnalyzer {
     
     // Validate DMARC
     // Sort DMARC records to ensure consistent validation results
-    const dmarcRecords = (consolidatedRecords[`_dmarc.${domain}`] || []).sort();
-    const dmarcResult = dmarcValidator.validate(dmarcRecords);
+    let dmarcRecords = (consolidatedRecords[`_dmarc.${domain}`] || []).sort();
+    let dmarcResult = dmarcValidator.validate(dmarcRecords);
+    
+    // If no DMARC record found at subdomain, check if this is a subdomain and look at root domain
+    if (dmarcRecords.length === 0 || dmarcResult.errors.some(e => e.type === 'missingRecord')) {
+      const rootDomain = this.extractRootDomain(domain);
+      
+      if (rootDomain) {
+        // Create a new DnsResolver instance
+        const dnsResolver = new DnsResolver({ timeout: 10000 });
+        
+        // Query for DMARC records at the root domain
+        const rootDmarcRecords = await this.queryDmarcRecord(dnsResolver, rootDomain);
+        
+        if (rootDmarcRecords.length > 0) {
+          // Update the consolidated records with the root domain DMARC
+          consolidatedRecords[`_dmarc.${rootDomain}`] = rootDmarcRecords.sort();
+          
+          // Add the root domain record to the results object for all providers
+          // This ensures the record is displayed in the results grid
+          for (const provider of Object.keys(results)) {
+            if (results[provider]) {
+              results[provider][`_dmarc.${rootDomain}`] = rootDmarcRecords;
+            }
+          }
+          
+          // Validate the root domain DMARC records
+          dmarcResult = dmarcValidator.validate(rootDmarcRecords);
+          
+          // Add an informational note about using root domain DMARC
+          if (dmarcResult.isValid) {
+            dmarcResult.usingRootDomain = rootDomain;
+            dmarcResult.rootDmarcRecords = rootDmarcRecords;
+            dmarcResult.originalDomain = domain;
+          }
+        }
+      }
+    }
     
     // Check consistency
     const consistencyResult = this.checkConsistency(results);

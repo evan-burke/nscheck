@@ -81,3 +81,53 @@
 .link:hover {
   text-decoration: none;
 }
+
+.infoSection {
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.infoContent {
+  display: flex;
+  align-items: flex-start;
+  background-color: #e8f4fd;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #0277bd;
+}
+
+.infoIcon {
+  font-size: 1.5rem;
+  margin-right: 1rem;
+  line-height: 1;
+}
+
+.infoMessage {
+  margin: 0.2rem;
+  color: #333;
+}
+
+.recordDetails {
+  margin-top: 0.8rem;
+  padding: 0.6rem;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 4px;
+}
+
+.recordTitle {
+  margin: 0 0 0.5rem 0;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.recordCode {
+  display: block;
+  font-family: monospace;
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 0.5rem;
+  margin-bottom: 0.2rem;
+  border-radius: 3px;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  word-break: break-all;
+}

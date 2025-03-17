@@ -85,6 +85,29 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ validation }) => {
         </div>
       )}
       
+      {/* Show info when using root domain DMARC */}
+      {validation.dmarc.usingRootDomain && validation.dmarc.isValid && (
+        <div className={styles.infoSection}>
+          <div className={styles.infoContent}>
+            <div className={styles.infoIcon}>ℹ️</div>
+            <div>
+              <p className={styles.infoMessage}>
+                Using DMARC record from root domain ({validation.dmarc.usingRootDomain}). This is valid, but for best practices, 
+                you may want to add a DMARC record specifically for this subdomain.
+              </p>
+              {validation.dmarc.rootDmarcRecords && validation.dmarc.rootDmarcRecords.length > 0 && (
+                <div className={styles.recordDetails}>
+                  <p className={styles.recordTitle}>Root domain DMARC record:</p>
+                  {validation.dmarc.rootDmarcRecords.map((record, idx) => (
+                    <code key={idx} className={styles.recordCode}>{record}</code>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* DKIM Errors */}
       {validation.dkim.errors.length > 0 && (
         <div className={styles.errorSection}>

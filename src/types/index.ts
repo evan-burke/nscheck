@@ -13,6 +13,7 @@ export interface DnsResult {
   cloudflare: Record<string, string[]>;
   openDNS: Record<string, string[]>;
   authoritative: DnsProviderResult;
+  [key: string]: Record<string, string[]> | DnsProviderResult;
 }
 
 export interface ValidationError {
@@ -35,6 +36,9 @@ export interface DkimValidationResult {
 export interface DmarcValidationResult {
   isValid: boolean;
   errors: ValidationError[];
+  usingRootDomain?: string;
+  rootDmarcRecords?: string[];
+  originalDomain?: string;
 }
 
 export interface ConsistencyResult {
