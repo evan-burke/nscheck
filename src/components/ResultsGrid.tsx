@@ -140,7 +140,16 @@ const ResultsGrid: React.FC<ResultsGridProps> = ({ results, validation }) => {
         <thead>
           <tr>
             <th>Record</th>
-            <th>Authoritative</th>
+            <th>
+              <div className={styles.tooltipContainer}>
+                Authoritative NS
+                <span className={styles.tooltipIcon}>ⓘ</span>
+                <span className={styles.tooltip}>
+                  The authoritative nameserver is the DNS server that has the official DNS record information for a domain. 
+                  It's the "source of truth" for DNS records, configured by the domain owner.
+                </span>
+              </div>
+            </th>
             <th>Google DNS</th>
             <th>Cloudflare DNS</th>
             <th>OpenDNS</th>

@@ -7,6 +7,55 @@
   flex-direction: column;
 }
 
+/* Tooltip styles */
+.tooltipContainer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tooltipIcon {
+  margin-left: 4px;
+  font-size: 14px;
+  color: #6c757d;
+  cursor: help;
+}
+
+.tooltip {
+  visibility: hidden;
+  position: absolute;
+  z-index: 1;
+  top: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 250px;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 8px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-weight: normal;
+  font-size: 0.8rem;
+}
+
+.tooltip::after {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent #333 transparent;
+}
+
+.tooltipContainer:hover .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
 .warning {
   display: flex;
   align-items: flex-start;
