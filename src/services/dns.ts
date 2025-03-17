@@ -222,6 +222,36 @@ export class DkimValidator {
           message: 'DKIM records found but point to incorrect destinations'
         });
       }
+    } else if (k2Records.length > 0 && k3Records.length === 0) {
+      // K2 exists but K3 is missing
+      const k2Valid = k2Records.some(r => r === 'dkim2.mcsv.net');
+      
+      if (k2Valid) {
+        result.errors.push({
+          type: 'missingK3Record',
+          message: 'k2 is set up correctly, but k3 record is missing'
+        });
+      } else {
+        result.errors.push({
+          type: 'incorrectDestination',
+          message: 'DKIM records found but point to incorrect destinations'
+        });
+      }
+    } else if (k2Records.length === 0 && k3Records.length > 0) {
+      // K3 exists but K2 is missing
+      const k3Valid = k3Records.some(r => r === 'dkim3.mcsv.net');
+      
+      if (k3Valid) {
+        result.errors.push({
+          type: 'missingK2Record',
+          message: 'k3 is set up correctly, but k2 record is missing'
+        });
+      } else {
+        result.errors.push({
+          type: 'incorrectDestination',
+          message: 'DKIM records found but point to incorrect destinations'
+        });
+      }
     } else {
       // Check fallback (k1 record)
       const k1Records = records[`k1._domainkey.${domain}`] || [];

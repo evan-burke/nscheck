@@ -154,6 +154,30 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ validation }) => {
                   </div>
                 </div>
               )}
+              
+              {error.type === 'missingK2Record' && (
+                <div className={styles.errorContent}>
+                  <div className={styles.errorIcon}>❌</div>
+                  <div>
+                    <p className={styles.errorMessage}>
+                      k3 record is set up correctly, but k2 record is missing. 
+                      Both k2 and k3 records are required.
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {error.type === 'missingK3Record' && (
+                <div className={styles.errorContent}>
+                  <div className={styles.errorIcon}>❌</div>
+                  <div>
+                    <p className={styles.errorMessage}>
+                      k2 record is set up correctly, but k3 record is missing. 
+                      Both k2 and k3 records are required.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
