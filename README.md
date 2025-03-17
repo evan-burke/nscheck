@@ -7,6 +7,12 @@ A simple DNS checking application for validating DKIM and DMARC records. This ap
 - Record propagation across multiple DNS providers
 - Common configuration errors and how to fix them
 
+## Features
+
+- **URL to Domain Extraction**: Automatically extracts the domain from URLs, allowing users to paste full URLs like `https://example.com/path?query=123` and we'll extract just `example.com` for DNS lookups
+- **www Subdomain Detection**: Identifies when users enter www subdomains and suggests checking the root domain instead
+- **Multi-DNS Provider Checks**: Compares results across Google, Cloudflare, OpenDNS, and authoritative nameservers
+
 ## Setup and Installation
 
 1. Clone the repository
@@ -99,6 +105,11 @@ The test suite covers the following areas:
 - DMARC record validation
 - Common DKIM configuration errors (wrong subdomain, duplicate domain)
 - DNS propagation consistency checks
+
+### Domain Processing
+- URL to domain extraction for various formats (https://, http://, paths, query parameters)
+- Subdomain handling
+- Edge cases and error handling for invalid inputs
 
 ### UI Components
 - Domain input form and animation transitions

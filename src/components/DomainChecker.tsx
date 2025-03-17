@@ -1,5 +1,6 @@
 import React, { useState, FormEvent } from 'react';
 import styles from '../styles/DomainChecker.module.css';
+import { extractDomain } from '../utils/domain';
 
 interface DomainCheckerProps {
   onCheck: (domain: string) => void;
@@ -15,14 +16,19 @@ const DomainChecker: React.FC<DomainCheckerProps> = ({ onCheck, isLoading = fals
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    const trimmedDomain = domain.trim();
-    if (!trimmedDomain) {
+    // Extract the domain from input (which might be a URL)
+    const extractedDomain = extractDomain(domain);
+    
+    if (!extractedDomain) {
       return;
     }
     
+    // Update the input field with the extracted domain
+    setDomain(extractedDomain);
+    
     // Check if the domain starts with www.
-    if (trimmedDomain.toLowerCase().startsWith('www.')) {
-      const stripped = trimmedDomain.substring(4); // Remove 'www.'
+    if (extractedDomain.toLowerCase().startsWith('www.')) {
+      const stripped = extractedDomain.substring(4); // Remove 'www.'
       setRootDomain(stripped);
       setShowWwwPrompt(true);
       return;
@@ -30,7 +36,7 @@ const DomainChecker: React.FC<DomainCheckerProps> = ({ onCheck, isLoading = fals
     
     // Proceed with the check
     setIsChecking(true);
-    onCheck(trimmedDomain);
+    onCheck(extractedDomain);
   };
   
   const handleUseRootDomain = () => {
@@ -43,7 +49,7 @@ const DomainChecker: React.FC<DomainCheckerProps> = ({ onCheck, isLoading = fals
   const handleKeepWww = () => {
     setShowWwwPrompt(false);
     setIsChecking(true);
-    onCheck(domain.trim());
+    onCheck(extractDomain(domain.trim()));
   };
 
   // Update isChecking state when loading state changes
@@ -111,7 +117,7 @@ const DomainChecker: React.FC<DomainCheckerProps> = ({ onCheck, isLoading = fals
               className={`${styles.button} ${styles.secondaryButton}`}
               onClick={handleKeepWww}
             >
-              No, keep {domain.trim()}
+              No, keep {domain}
             </button>
           </div>
         </div>
