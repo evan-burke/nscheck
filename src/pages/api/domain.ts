@@ -50,15 +50,19 @@ export default async function handler(
   const allowed = await throttler.checkAllowed(clientIp);
   if (!allowed) {
     // Log rate limit hit
-    await logger.log({
-      domain,
-      success: false,
-      ip: clientIp,
-      errors: [{ type: 'rateLimit', message: 'Rate limit exceeded' }]
-    });
+    try {
+      await logger.log({
+        domain,
+        success: false,
+        ip: clientIp,
+        errors: [{ type: 'rateLimit', message: 'Rate limit exceeded' }]
+      });
+    } catch (logError) {
+      console.error('Error logging rate limit hit:', logError);
+    }
     
     return res.status(429).json({ 
-      error: 'Rate limit exceeded. Please try again later.' 
+      error: `Rate limit exceeded. Please try again later.`
     });
   }
 
@@ -106,12 +110,16 @@ export default async function handler(
     const validation = await resultAnalyzer.validateResults(domain, results);
     
     // Log the request
-    await logger.log({
-      domain,
-      success: true,
-      results,
-      ip: clientIp
-    });
+    try {
+      await logger.log({
+        domain,
+        success: true,
+        results,
+        ip: clientIp
+      });
+    } catch (logError) {
+      console.error('Error logging successful request:', logError);
+    }
 
     // Return results
     return res.status(200).json({
@@ -124,15 +132,19 @@ export default async function handler(
     console.error('Error processing DNS request:', error);
     
     // Log the error
-    await logger.log({
-      domain,
-      success: false,
-      ip: clientIp,
-      errors: [{ 
-        type: 'serverError', 
-        message: (error as Error).message || 'Unknown error'
-      }]
-    });
+    try {
+      await logger.log({
+        domain,
+        success: false,
+        ip: clientIp,
+        errors: [{ 
+          type: 'serverError', 
+          message: (error as Error).message || 'Unknown error'
+        }]
+      });
+    } catch (logError) {
+      console.error('Error logging server error:', logError);
+    }
     
     return res.status(500).json({ 
       error: 'Failed to process DNS lookup request',
