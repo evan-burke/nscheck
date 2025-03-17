@@ -62,7 +62,7 @@ export default async function handler(
     }
     
     return res.status(429).json({ 
-      error: `Rate limit exceeded. Please try again later.`
+      error: `Rate limit exceeded from ${clientIp}. Please try again later or reach out to Evan`
     });
   }
 
