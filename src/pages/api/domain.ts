@@ -16,11 +16,11 @@ const throttler = new RequestThrottler(120, {
   '76.165.67.45': 1000, // Custom override example - allows 1000 requests per hour
 });
 
-// Initialize logger with file logging disabled for Vercel compatibility
+// Initialize logger with file logging enabled in dev environment, disabled in production
 const logger = new Logger({ 
   logDir: process.env.LOG_DIR || './logs',
   logFile: 'dns-queries.log',
-  enableFileLogging: false // Disabled for Vercel compatibility
+  enableFileLogging: process.env.NODE_ENV === 'development' || process.env.ENABLE_FILE_LOGGING === 'true'
 });
 
 export default async function handler(
@@ -55,7 +55,7 @@ export default async function handler(
         domain,
         success: false,
         ip: clientIp,
-        errors: [{ type: 'rateLimit', message: 'Rate limit exceeded' }]
+        errors: [{ type: 'rateLimit', message: 'Rate limit exceeded from ${clientIp}' }]
       });
     } catch (logError) {
       console.error('Error logging rate limit hit:', logError);

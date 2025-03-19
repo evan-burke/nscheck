@@ -34,6 +34,24 @@ npm run build
 npm run start
 ```
 
+## Logging
+
+### Development Environment
+File logging is automatically enabled in development mode. Logs are written to:
+- `./logs/dns-queries.log`
+
+### Production Environment
+By default, file logging is disabled in production for Vercel compatibility. 
+To enable file logging in any environment, set the environment variable:
+```
+ENABLE_FILE_LOGGING=true
+```
+
+You can also customize the log directory:
+```
+LOG_DIR=/custom/path/to/logs
+```
+
 ## Testing
 
 The test suite uses Jest and React Testing Library. Since actual DNS resolution and filesystem operations should be avoided in tests, you should use jest.mock() to create appropriate mocks for your tests.

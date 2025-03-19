@@ -106,10 +106,22 @@
   width: 90%;
   max-width: 2000px;
   margin: 1rem auto;
-  padding: 1rem;
+  padding: 1.5rem;
   background-color: #ffeaea;
-  border-radius: 8px;
+  border-radius: 12px;
   color: #dc3545;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #ffcccc;
+  animation: fadeIn 0.5s ease-in-out forwards;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.error p {
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin: 0.5rem 0;
 }
 
 @keyframes fadeIn {
