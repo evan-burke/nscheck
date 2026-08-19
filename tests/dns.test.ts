@@ -84,7 +84,7 @@ jest.mock('../src/services/dns', () => {
     DmarcValidator: jest.fn().mockImplementation(() => ({
       validate: jest.fn().mockImplementation((records) => {
         // Check for multiple DMARC records
-        if (records.length > 1 && records.every(r => r.includes('v=DMARC1'))) {
+        if (records.length > 1 && records.every((r: string) => r.includes('v=DMARC1'))) {
           return {
             isValid: false,
             errors: [{ type: 'multipleRecords', message: 'Multiple DMARC records found' }]

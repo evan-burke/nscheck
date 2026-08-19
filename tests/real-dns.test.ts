@@ -131,7 +131,7 @@ testOrSkip('can get authoritative nameservers for a valid domain', async () => {
   expect(nsRecords.length).toBeGreaterThan(0);
   
   // Nameservers should be strings
-  nsRecords.forEach(ns => {
+  nsRecords.forEach((ns: string) => {
     expect(typeof ns).toBe('string');
     expect(ns.length).toBeGreaterThan(0);
   });
@@ -225,7 +225,7 @@ testOrSkip('can detect duplicate domain in DKIM records for evan-burke.net', asy
   
   // Add any duplicate domain records we find
   const addRecordsToConsolidated = (results: any) => {
-    Object.values(results).forEach(providerResults => {
+    Object.values(results).forEach((providerResults: any) => {
       Object.entries(providerResults).forEach(([recordName, values]) => {
         // Skip metadata fields
         if (recordName === 'authoritativeServer' || 
