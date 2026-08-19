@@ -362,44 +362,6 @@ export class DkimValidator {
       });
     }
     
-    // Check for TXT records that contain DKIM values (should be CNAME instead)
-    const dkimKeys = ['k1', 'k2', 'k3'];
-    for (const key of dkimKeys) {
-      const txtRecordKey = `${key}._domainkey.${domain}`;
-      const txtRecords = records[txtRecordKey] || [];
-      
-      // Check if any TXT record contains dkim*.mcsv.net values
-      const hasDkimValues = txtRecords.some(value => 
-        value.includes('dkim.mcsv.net') || 
-        value.includes('dkim2.mcsv.net') || 
-        value.includes('dkim3.mcsv.net')
-      );
-      
-      if (hasDkimValues) {
-        result.isValid = false;
-        
-        // Find the specific DKIM value
-        const dkimValue = txtRecords.find(value => 
-          value.includes('dkim.mcsv.net') || 
-          value.includes('dkim2.mcsv.net') || 
-          value.includes('dkim3.mcsv.net')
-        );
-        
-        // Extract just the DKIM hostname
-        let targetHost = '';
-        if (dkimValue?.includes('dkim.mcsv.net')) targetHost = 'dkim.mcsv.net';
-        else if (dkimValue?.includes('dkim2.mcsv.net')) targetHost = 'dkim2.mcsv.net';
-        else if (dkimValue?.includes('dkim3.mcsv.net')) targetHost = 'dkim3.mcsv.net';
-        
-        result.errors.push({
-          type: 'txtInsteadOfCname',
-          message: `DKIM record published as TXT instead of CNAME. This should be a CNAME record pointing to ${targetHost}`,
-          actual: `${txtRecordKey} TXT "${dkimValue}"`,
-          expected: `${txtRecordKey} CNAME ${targetHost}`
-        });
-      }
-    }
-    
     return result;
   }
 }
@@ -419,17 +381,6 @@ export class DmarcValidator {
     
     // Filter records that contain v=DMARC1
     const dmarcRecords = records.filter(r => r.includes('v=DMARC1'));
-    // Filter records that do NOT contain v=DMARC1
-    const nonDmarcRecords = records.filter(r => !r.includes('v=DMARC1'));
-    
-    // Check for non-DMARC records at _dmarc location
-    if (nonDmarcRecords.length > 0) {
-      result.errors.push({
-        type: 'nonDmarcRecords',
-        message: 'Non-DMARC records found at _dmarc location. Please remove all records that do not contain v=DMARC1. There should be exactly one DMARC record.'
-      });
-      return result;
-    }
     
     if (dmarcRecords.length === 0) {
       result.errors.push({
