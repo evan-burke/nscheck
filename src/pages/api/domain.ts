@@ -75,10 +75,6 @@ export default async function handler(
     const k1Results = await dnsResolver.queryAllProviders(domain, 'CNAME', 'k1._domainkey');
     const k2Results = await dnsResolver.queryAllProviders(domain, 'CNAME', 'k2._domainkey');
     const k3Results = await dnsResolver.queryAllProviders(domain, 'CNAME', 'k3._domainkey');
-    // Also check for TXT records in case user published DKIM as TXT by mistake
-    const k1TxtResults = await dnsResolver.queryAllProviders(domain, 'TXT', 'k1._domainkey');
-    const k2TxtResults = await dnsResolver.queryAllProviders(domain, 'TXT', 'k2._domainkey');
-    const k3TxtResults = await dnsResolver.queryAllProviders(domain, 'TXT', 'k3._domainkey');
     // For DMARC, we want the TXT record
     const dmarcResults = await dnsResolver.queryAllProviders(domain, 'TXT', '_dmarc');
     
@@ -88,36 +84,24 @@ export default async function handler(
         ...k1Results.google,
         ...k2Results.google,
         ...k3Results.google,
-        ...k1TxtResults.google,
-        ...k2TxtResults.google,
-        ...k3TxtResults.google,
         ...dmarcResults.google
       },
       cloudflare: {
         ...k1Results.cloudflare,
         ...k2Results.cloudflare,
         ...k3Results.cloudflare,
-        ...k1TxtResults.cloudflare,
-        ...k2TxtResults.cloudflare,
-        ...k3TxtResults.cloudflare,
         ...dmarcResults.cloudflare
       },
       openDNS: {
         ...k1Results.openDNS,
         ...k2Results.openDNS,
         ...k3Results.openDNS,
-        ...k1TxtResults.openDNS,
-        ...k2TxtResults.openDNS,
-        ...k3TxtResults.openDNS,
         ...dmarcResults.openDNS
       },
       authoritative: {
         ...k1Results.authoritative,
         ...k2Results.authoritative,
         ...k3Results.authoritative,
-        ...k1TxtResults.authoritative,
-        ...k2TxtResults.authoritative,
-        ...k3TxtResults.authoritative,
         ...dmarcResults.authoritative
       }
     };
